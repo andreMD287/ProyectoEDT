@@ -7,6 +7,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{geometry}
 \usepackage{graphicx}
+\graphicspath{{fase 1/imagenes/}{fase 2/imagenes/}}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
@@ -323,7 +324,7 @@ The use of Sentinel-2 L2A imagery with 15\% cloud coverage from August 15, 2024,
 
 This second phase focuses on the implementation and initial evaluation of five supervised machine learning models for land cover classification over the Armero study area. Each model was trained on the balanced spectral dataset generated in Phase 1, which contains 8,000 pixels (2,000 per class) extracted from Sentinel-2 L2A imagery. The dataset was split into 70\% for training (5,600 pixels) and 30\% for validation (2,400 pixels).
 
-All models were evaluated using standard classification metrics: Overall Accuracy, Kappa Coefficient, Precision, Recall, and F1-Score. Additionally, Hyperparameter Optimization (HPO) was performed on each model using 5-fold cross-validation to maximize predictive performance.
+All models were evaluated using standard classification metrics: Overall Accuracy, Kappa Coefficient, Precision, Recall, and F1-Score. Where applicable, Hyperparameter Optimization (HPO) was performed using 5-fold cross-validation to maximize predictive performance.
 
 %------------------------------------------------
 \section{Data Preparation}
@@ -450,19 +451,83 @@ Kappa Coefficient & 0.7089 \\
 
 \subsection{Description}
 
-% [COMPLETE THIS SECTION]
+A Support Vector Machine is a margin-based classifier that searches for the hyperplane maximizing the separation between classes in the feature space. To handle the non-linear separation of spectral classes, a Radial Basis Function (RBF) kernel was used, which implicitly maps the ten spectral bands into a higher-dimensional space. As SVM is sensitive to feature magnitude, the bands were scaled prior to training, consistent with the normalization described in the \textit{Data Normalization} subsection.
 
 \subsection{Hyperparameter Optimization}
 
-% [COMPLETE THIS SECTION]
+The model was trained with a fixed configuration rather than an exhaustive search: an RBF kernel with a regularization parameter $C = 10$ and \texttt{gamma = "scale"} (i.e.\ $1/(n_{\mathrm{features}} \cdot \mathrm{Var}(X))$). These values were selected as reasonable defaults for spectral data; a systematic grid search over $C$ and \texttt{gamma} is deferred to the optimization phase.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+Kernel & RBF (Radial Basis Function) \\
+\hline
+Regularization $C$ & 10 \\
+\hline
+gamma & scale \\
+\hline
+\end{tabular}
+\caption{Configuration used for the Support Vector Machine}
+\end{table}
 
 \subsection{Confusion Matrix}
 
-% [COMPLETE THIS SECTION]
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\hline
+Cultivos       & 461 & 113 &   9 &   7 \\
+\hline
+Suelo\_desnudo & 103 & 448 &   9 &  18 \\
+\hline
+Vegetacion     &  12 &  32 & 581 &   2 \\
+\hline
+Zona\_urbana   &  24 &   7 &   1 & 573 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix for the Support Vector Machine (RBF kernel)}
+\end{table}
 
 \subsection{Performance Metrics}
 
-% [COMPLETE THIS SECTION]
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+Cultivos       & 0.7683 & 0.9283 & 0.7814 & 0.7683 & 0.7750 \\
+\hline
+Suelo\_desnudo & 0.7467 & 0.9278 & 0.7751 & 0.7467 & 0.7606 \\
+\hline
+Vegetacion     & 0.9683 & 0.9744 & 0.9266 & 0.9683 & 0.9470 \\
+\hline
+Zona\_urbana   & 0.9550 & 0.9822 & 0.9471 & 0.9550 & 0.9510 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics for the Support Vector Machine}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Overall Accuracy & 85.96\% \\
+\hline
+Kappa Coefficient & 0.8128 \\
+\hline
+\end{tabular}
+\caption{Overall metrics for the Support Vector Machine}
+\end{table}
+
+The SVM achieved strong performance in distinguishing \textit{Vegetacion} (F1 = 0.9470) and \textit{Zona\_urbana} (F1 = 0.9510), whose spectral signatures are clearly separable. The main source of error was the mutual confusion between \textit{Cultivos} and \textit{Suelo\_desnudo}, which share similar reflectance values in several bands, reducing their individual F1-scores to approximately 0.77.
 
 %------------------------------------------------
 \section{Model 3: Artificial Neural Network (ANN)}
@@ -595,19 +660,65 @@ Kappa Coefficient & 0.8322 \\
 
 \subsection{Description}
 
-% [COMPLETE THIS SECTION]
+Naive Bayes is a probabilistic classifier based on Bayes' theorem under the assumption of conditional independence between features given the class. In this work a Gaussian Naive Bayes model was used, where each spectral band is modeled as a normal distribution conditioned on the land cover class. Despite the strong independence assumption---which rarely holds for correlated spectral bands---the model is computationally efficient and provides a useful probabilistic baseline. Like the Decision Tree, it was trained on the original (unnormalized) band values, as it is unaffected by feature scale.
 
 \subsection{Hyperparameter Optimization}
 
-% [COMPLETE THIS SECTION]
+Gaussian Naive Bayes has no substantive hyperparameters to optimize: the class-conditional means and variances are estimated directly from the training data, and the only tunable parameter (\texttt{var\_smoothing}) is a small numerical-stability term that does not meaningfully alter the decision boundaries for this dataset. For this reason, no hyperparameter search was performed, and the model was trained with its default configuration.
 
 \subsection{Confusion Matrix}
 
-% [COMPLETE THIS SECTION]
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\hline
+Cultivos       & 255 &  39 &   9 &  35 \\
+\hline
+Suelo\_desnudo & 288 & 453 &  11 & 172 \\
+\hline
+Vegetacion     &  21 &  83 & 573 &  38 \\
+\hline
+Zona\_urbana   &  36 &  25 &   7 & 355 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix for the Gaussian Naive Bayes classifier}
+\end{table}
 
 \subsection{Performance Metrics}
 
-% [COMPLETE THIS SECTION]
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+Cultivos       & 0.4250 & 0.9539 & 0.7544 & 0.4250 & 0.5437 \\
+\hline
+Suelo\_desnudo & 0.7550 & 0.7383 & 0.4903 & 0.7550 & 0.5945 \\
+\hline
+Vegetacion     & 0.9550 & 0.9211 & 0.8014 & 0.9550 & 0.8714 \\
+\hline
+Zona\_urbana   & 0.5917 & 0.9622 & 0.8392 & 0.5917 & 0.6941 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics for the Gaussian Naive Bayes classifier}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Overall Accuracy & 68.17\% \\
+\hline
+Kappa Coefficient & 0.5756 \\
+\hline
+\end{tabular}
+\caption{Overall metrics for the Gaussian Naive Bayes classifier}
+\end{table}
 
 %------------------------------------------------
 \section{Comparative Summary}
@@ -622,13 +733,13 @@ Kappa Coefficient & 0.8322 \\
 \hline
 Decision Tree  & 78.17\% & 0.7089 & Vegetacion (92.17\%) & Suelo\_desnudo (66.33\%) \\
 \hline
-SVM            & -- & -- & -- & -- \\
+SVM            & 85.96\% & 0.8128 & Vegetacion (96.83\%) & Suelo\_desnudo (74.67\%) \\
 \hline
 ANN            & 87.42\% & 0.8322 & Vegetacion (95.67\%) & Suelo\_desnudo (79.00\%) \\
 \hline
 KNN            & -- & -- & -- & -- \\
 \hline
-Naive Bayes    & -- & -- & -- & -- \\
+Naive Bayes    & 68.17\% & 0.5756 & Vegetacion (95.50\%) & Cultivos (42.50\%) \\
 \hline
 \end{tabular}
 \caption{Comparative performance summary. Dashes (--) indicate sections pending completion by team members.}
@@ -638,8 +749,8 @@ Naive Bayes    & -- & -- & -- & -- \\
 \section{Phase 2 Conclusion}
 %------------------------------------------------
 
-Among the two models evaluated in this report, the Artificial Neural Network consistently outperformed the Decision Tree across all metrics, achieving 87.42\% overall accuracy and a Kappa coefficient of 0.8322 compared to 78.17\% and 0.7089 for the optimized Decision Tree. Both models showed the highest classification performance for the \textit{Vegetacion} and \textit{Zona\_urbana} classes, while \textit{Suelo\_desnudo} and \textit{Cultivos} proved more challenging to distinguish spectrally.
+Among the four models evaluated in this report, the Artificial Neural Network achieved the best overall performance (87.42\% accuracy, Kappa 0.8322), closely followed by the Support Vector Machine with an RBF kernel (85.96\%, 0.8128). The optimized Decision Tree (78.17\%, 0.7089) and the Gaussian Naive Bayes classifier (68.17\%, 0.5756) trailed further behind. The lower performance of Naive Bayes is consistent with its strong feature-independence assumption, which does not hold for the highly correlated Sentinel-2 spectral bands. Across all models, the \textit{Vegetacion} and \textit{Zona\_urbana} classes were classified most reliably, while \textit{Suelo\_desnudo} and \textit{Cultivos} proved more challenging to distinguish spectrally due to their similar reflectance signatures.
 
-The complete comparative analysis, including SVM, KNN, and Naive Bayes results, will be integrated once all team contributions are compiled.
+The complete comparative analysis, including the KNN results, will be integrated once all team contributions are compiled.
 
 \end{document}
