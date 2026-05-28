@@ -1,0 +1,63 @@
+% ------------------- SUPPORT VECTOR MACHINES ---------------------
+\subsubsection{Support Vector Machines (SVM)}
+
+The Support Vector Machine was trained using a Radial Basis Function
+(RBF) kernel, which is well suited for the non-linear separation of
+spectral classes. The ten spectral bands (B2--B12) were standardized
+(zero mean, unit variance) prior to training, since SVM is sensitive
+to feature scaling. A regularization parameter of $C=10$ and
+\texttt{gamma="scale"} were used, and the model was trained on 70\% of
+the samples and evaluated on the remaining 30\% (2400 pixels).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Actual \textbackslash{} Predicted} & \textbf{Cultivos} & \textbf{Suelo desn.} & \textbf{Vegetaci\'on} & \textbf{Z. urbana} \\
+\hline
+Cultivos       & 461 & 103 & 12  & 24  \\
+\hline
+Suelo desnudo  & 113 & 448 & 32  & 7   \\
+\hline
+Vegetaci\'on   & 9   & 9   & 581 & 1   \\
+\hline
+Zona urbana    & 7   & 18  & 2   & 573 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix --- Support Vector Machines (test set, 2400 pixels)}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\hline
+Cultivos       & 0.781 & 0.768 & 0.775 & 600 \\
+\hline
+Suelo desnudo  & 0.775 & 0.747 & 0.761 & 600 \\
+\hline
+Vegetaci\'on   & 0.927 & 0.968 & 0.947 & 600 \\
+\hline
+Zona urbana    & 0.947 & 0.955 & 0.951 & 600 \\
+\hline
+\textbf{Accuracy}     & \multicolumn{3}{c|}{0.860} & 2400 \\
+\hline
+\textbf{Macro avg}    & 0.858 & 0.860 & 0.858 & 2400 \\
+\hline
+\textbf{Weighted avg} & 0.858 & 0.860 & 0.858 & 2400 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics --- Support Vector Machines}
+\end{table}
+
+\noindent\textbf{Overall Accuracy:} 85.96\%
+
+\vspace{0.3cm}
+\noindent The SVM achieved strong performance in distinguishing
+\textit{Vegetaci\'on} (F1 = 0.947) and \textit{Zona urbana}
+(F1 = 0.951), whose spectral signatures are clearly separable.
+The main source of error was the mutual confusion between
+\textit{Cultivos} and \textit{Suelo desnudo}, which share similar
+reflectance values in several bands, reducing their individual
+F1-scores to approximately 0.77.
