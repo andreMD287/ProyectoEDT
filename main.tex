@@ -350,13 +350,13 @@ Validation & 2,400 & 30\% \\
 
 \subsection{Data Normalization}
 
-Models sensitive to feature scale (ANN, SVM, KNN) were trained on a normalized version of the dataset, where each spectral band was rescaled to the range $[0, 1]$ using min-max normalization:
+Models sensitive to feature scale were trained on a rescaled version of the dataset. The ANN and KNN models used min-max normalization, where each spectral band was rescaled to the range $[0, 1]$:
 
 \begin{equation}
 x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
 \end{equation}
 
-Decision Trees and Naive Bayes were trained on the original (unnormalized) values, as these models are not affected by feature scale.
+The SVM was trained on standardized features (zero mean and unit variance), $z = (x - \mu)/\sigma$, which is the scaling expected by its RBF kernel. Decision Trees and Naive Bayes were trained on the original (unnormalized) values, as these models are not affected by feature scale.
 
 %------------------------------------------------
 \section{Model 1: Decision Tree (DT)}
@@ -451,7 +451,7 @@ Kappa Coefficient & 0.7089 \\
 
 \subsection{Description}
 
-A Support Vector Machine is a margin-based classifier that searches for the hyperplane maximizing the separation between classes in the feature space. To handle the non-linear separation of spectral classes, a Radial Basis Function (RBF) kernel was used, which implicitly maps the ten spectral bands into a higher-dimensional space. As SVM is sensitive to feature magnitude, the bands were scaled prior to training, consistent with the normalization described in the \textit{Data Normalization} subsection.
+A Support Vector Machine is a margin-based classifier that searches for the hyperplane maximizing the separation between classes in the feature space. To handle the non-linear separation of spectral classes, a Radial Basis Function (RBF) kernel was used, which implicitly maps the ten spectral bands into a higher-dimensional space. As SVM is sensitive to feature magnitude, the bands were standardized (zero mean and unit variance) prior to training, as described in the \textit{Data Normalization} subsection.
 
 \subsection{Hyperparameter Optimization}
 
@@ -736,10 +736,7 @@ Kappa Coefficient & 0.7644 \\
 \caption{Overall metrics for the optimized KNN}
 \end{table}
 
-\noindent\textbf{Overall Accuracy:} 82.33\%
-
-\vspace{0.3cm}
-\noindent The KNN model achieved solid performance overall, sitting between the Decision Tree and the ANN in terms of predictive quality. It classified \textit{Vegetacion} and \textit{Zona\_urbana} more reliably than the other classes, while the main source of confusion remained the spectral overlap between \textit{Cultivos} and \textit{Suelo\_desnudo}, which are visually and spectrally similar in the study area.
+The KNN model achieved solid performance overall, sitting between the Decision Tree and the ANN in terms of predictive quality. It classified \textit{Vegetacion} and \textit{Zona\_urbana} more reliably than the other classes, while the main source of confusion remained the spectral overlap between \textit{Cultivos} and \textit{Suelo\_desnudo}, which are visually and spectrally similar in the study area.
 
 %------------------------------------------------
 \section{Model 5: Naive Bayes (NB)}
@@ -747,11 +744,36 @@ Kappa Coefficient & 0.7644 \\
 
 \subsection{Description}
 
-Naive Bayes is a probabilistic classifier based on Bayes' theorem under the assumption of conditional independence between features given the class. In this work a Gaussian Naive Bayes model was used, where each spectral band is modeled as a normal distribution conditioned on the land cover class. Despite the strong independence assumption---which rarely holds for correlated spectral bands---the model is computationally efficient and provides a useful probabilistic baseline. Like the Decision Tree, it was trained on the original (unnormalized) band values, as it is unaffected by feature scale.
+Naive Bayes is a probabilistic classifier based on Bayes' Theorem that assumes conditional independence between spectral bands. The Gaussian variant models each band's distribution as a normal distribution per class. The key hyperparameters are \texttt{fL} (Laplace smoothing), \texttt{usekernel} (whether to use kernel density estimation instead of the Gaussian assumption), and \texttt{adjust} (bandwidth adjustment for kernel estimation).
 
 \subsection{Hyperparameter Optimization}
 
-Gaussian Naive Bayes has no substantive hyperparameters to optimize: the class-conditional means and variances are estimated directly from the training data, and the only tunable parameter (\texttt{var\_smoothing}) is a small numerical-stability term that does not meaningfully alter the decision boundaries for this dataset. For this reason, no hyperparameter search was performed, and the model was trained with its default configuration.
+HPO was performed using 5-fold cross-validation over the following grid:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Parameter} & \textbf{Values Tested} \\
+\hline
+fL (Laplace smoothing) & 0, 0.5, 1 \\
+\hline
+usekernel & TRUE, FALSE \\
+\hline
+adjust (bandwidth) & 0.5, 1, 2 \\
+\hline
+\end{tabular}
+\caption{Hyperparameter grid for Naive Bayes}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{nb_hpo.png}
+\caption{Cross-validation accuracy for Naive Bayes hyperparameter combinations.}
+\label{fig:nb_hpo}
+\end{figure}
+
+The optimal configuration was \textbf{fL = 0, usekernel = FALSE, adjust = 0.5}, achieving a cross-validation accuracy of 67.59\% and a Kappa coefficient of 0.5679.
 
 \subsection{Confusion Matrix}
 
@@ -761,16 +783,16 @@ Gaussian Naive Bayes has no substantive hyperparameters to optimize: the class-c
 \hline
 \textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
 \hline
-Cultivos       & 255 &  39 &   9 &  35 \\
+Cultivos       & 258 &  65 &   8 &  34 \\
 \hline
-Suelo\_desnudo & 288 & 453 &  11 & 172 \\
+Suelo\_desnudo & 284 & 425 &  23 & 171 \\
 \hline
-Vegetacion     &  21 &  83 & 573 &  38 \\
+Vegetacion     &  22 &  78 & 557 &  37 \\
 \hline
-Zona\_urbana   &  36 &  25 &   7 & 355 \\
+Zona\_urbana   &  36 &  32 &  12 & 358 \\
 \hline
 \end{tabular}
-\caption{Confusion matrix for the Gaussian Naive Bayes classifier}
+\caption{Confusion matrix for the optimized Naive Bayes (fL = 0, usekernel = FALSE, adjust = 0.5)}
 \end{table}
 
 \subsection{Performance Metrics}
@@ -781,16 +803,16 @@ Zona\_urbana   &  36 &  25 &   7 & 355 \\
 \hline
 \textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
 \hline
-Cultivos       & 0.4250 & 0.9539 & 0.7544 & 0.4250 & 0.5437 \\
+Cultivos       & 0.4300 & 0.9406 & 0.7068 & 0.4300 & 0.5357 \\
 \hline
-Suelo\_desnudo & 0.7550 & 0.7383 & 0.4903 & 0.7550 & 0.5945 \\
+Suelo\_desnudo & 0.7083 & 0.7344 & 0.4707 & 0.7083 & 0.5657 \\
 \hline
-Vegetacion     & 0.9550 & 0.9211 & 0.8014 & 0.9550 & 0.8714 \\
+Vegetacion     & 0.9283 & 0.9239 & 0.8026 & 0.9283 & 0.8610 \\
 \hline
-Zona\_urbana   & 0.5917 & 0.9622 & 0.8392 & 0.5917 & 0.6941 \\
+Zona\_urbana   & 0.5967 & 0.9556 & 0.8174 & 0.5967 & 0.6899 \\
 \hline
 \end{tabular}
-\caption{Per-class performance metrics for the Gaussian Naive Bayes classifier}
+\caption{Per-class performance metrics for the optimized Naive Bayes}
 \end{table}
 
 \begin{table}[H]
@@ -799,12 +821,12 @@ Zona\_urbana   & 0.5917 & 0.9622 & 0.8392 & 0.5917 & 0.6941 \\
 \hline
 \textbf{Metric} & \textbf{Value} \\
 \hline
-Overall Accuracy & 68.17\% \\
+Overall Accuracy & 66.58\% \\
 \hline
-Kappa Coefficient & 0.5756 \\
+Kappa Coefficient & 0.5544 \\
 \hline
 \end{tabular}
-\caption{Overall metrics for the Gaussian Naive Bayes classifier}
+\caption{Overall metrics for the optimized Naive Bayes}
 \end{table}
 
 %------------------------------------------------
@@ -826,18 +848,18 @@ ANN            & 87.42\% & 0.8322 & Vegetacion (95.67\%) & Suelo\_desnudo (79.00
 \hline
 KNN            & 82.33\% & 0.7644 & Vegetacion (94.33\%) & Suelo\_desnudo (70.67\%) \\
 \hline
-Naive Bayes    & 68.17\% & 0.5756 & Vegetacion (95.50\%) & Cultivos (42.50\%) \\
+Naive Bayes    & 66.58\% & 0.5544 & Vegetacion (92.83\%) & Cultivos (43.00\%) \\
 \hline
 \end{tabular}
-\caption{Comparative performance summary. Dashes (--) indicate sections pending completion by team members.}
+\caption{Comparative performance summary across the five classification models. The best class corresponds to the highest per-class sensitivity and the worst class to the lowest.}
 \end{table}
 
 %------------------------------------------------
 \section{Phase 2 Conclusion}
 %------------------------------------------------
 
-Among the models evaluated in the completed sections of this report, the Artificial Neural Network consistently outperformed the Decision Tree and KNN across all metrics, achieving 87.42\% overall accuracy and a Kappa coefficient of 0.8322. KNN followed with 82.33\% accuracy and 0.7644 Kappa, while the Decision Tree obtained 78.17\% and 0.7089. Across the three models, \textit{Vegetacion} and \textit{Zona\_urbana} remained the easiest classes to distinguish, while \textit{Suelo\_desnudo} and \textit{Cultivos} continued to show the strongest spectral overlap.
+Among the five models evaluated in this report, the Artificial Neural Network achieved the best overall performance, with 87.42\% accuracy and a Kappa coefficient of 0.8322. It was closely followed by the Support Vector Machine (85.96\%, 0.8128) and the K-Nearest Neighbor classifier (82.33\%, 0.7644). The Decision Tree obtained 78.17\% accuracy (0.7089), while the Gaussian Naive Bayes classifier performed the weakest (66.58\%, 0.5544), a result consistent with its conditional-independence assumption, which does not hold for the highly correlated Sentinel-2 spectral bands. Across all five models, \textit{Vegetacion} and \textit{Zona\_urbana} were the most reliably classified categories, whereas \textit{Suelo\_desnudo} and \textit{Cultivos} consistently showed the strongest spectral overlap and accounted for most of the misclassifications.
 
-The complete comparative analysis, including SVM and Naive Bayes results, will be integrated once all team contributions are compiled.
+These results confirm that non-linear models (ANN and SVM) are best suited for capturing the spectral complexity of the Armero study area, providing a solid baseline for the further optimization and thematic mapping planned for the next phase.
 
 \end{document}

@@ -6,6 +6,8 @@
 
 library(caret)
 library(e1071)
+library(klaR)
+library(forcats)
 
 # ── Adjust these paths ──────────────────────────────────────
 tsv_file   <- "C:/Users/valeh/OneDrive - Pontificia Universidad Javeriana/2610/Emergentes/Proyecto 2/training_data.tsv"
@@ -19,9 +21,6 @@ output_dir <- "C:/Users/valeh/OneDrive - Pontificia Universidad Javeriana/2610/E
 df <- read.table(tsv_file, sep = "\t", header = TRUE)
 df$clase <- as.factor(df$clase)
 
-bandas <- c("B2","B3","B4","B5","B6","B7","B8","B8A","B11","B12")
-
-# Check dataset
 print(head(df))
 print(table(df$clase))
 
@@ -30,11 +29,11 @@ print(table(df$clase))
 # ============================================================
 
 set.seed(123)
-
-idx <- createDataPartition(df$clase, p = 0.7, list = FALSE)
-
+idx   <- createDataPartition(df$clase, p = 0.7, list = FALSE)
 train <- df[idx, ]
 test  <- df[-idx, ]
+
+message("✓ Data loaded and split")
 
 # ============================================================
 # 3. Naive Bayes HPO
@@ -43,17 +42,17 @@ test  <- df[-idx, ]
 control <- trainControl(method = "cv", number = 5)
 
 grid_nb <- expand.grid(
-  fL = c(0, 0.5, 1),
+  fL        = c(0, 0.5, 1),
   usekernel = c(TRUE, FALSE),
-  adjust = c(0.5, 1, 2)
+  adjust    = c(0.5, 1, 2)
 )
 
 modelo_nb_hpo <- train(
   clase ~ B2+B3+B4+B5+B6+B7+B8+B8A+B11+B12,
-  data = train,
-  method = "nb",
+  data      = train,
+  method    = "nb",
   trControl = control,
-  tuneGrid = grid_nb
+  tuneGrid  = grid_nb
 )
 
 message("NB HPO results:")
@@ -63,11 +62,11 @@ print(modelo_nb_hpo)
 png(paste0(output_dir, "nb_hpo.png"), width = 1200, height = 700, res = 150)
 plot(modelo_nb_hpo)
 dev.off()
-
 message("✓ nb_hpo.png saved")
 
 # ============================================================
 # 4. Train optimized Naive Bayes
+# Best params: fL = 0, usekernel = FALSE, adjust = 0.5
 # ============================================================
 
 best_params <- modelo_nb_hpo$bestTune
@@ -75,10 +74,10 @@ print(best_params)
 
 modelo_nb_opt <- train(
   clase ~ B2+B3+B4+B5+B6+B7+B8+B8A+B11+B12,
-  data = train,
-  method = "nb",
+  data      = train,
+  method    = "nb",
   trControl = trainControl(method = "none"),
-  tuneGrid = best_params
+  tuneGrid  = best_params
 )
 
 # ============================================================
@@ -86,32 +85,13 @@ modelo_nb_opt <- train(
 # ============================================================
 
 pred_nb <- predict(modelo_nb_opt, test)
-
-cm_nb <- confusionMatrix(pred_nb, test$clase)
+cm_nb   <- confusionMatrix(pred_nb, test$clase)
 
 message("\n=== Naive Bayes Optimized ===")
 print(cm_nb)
 
 # ============================================================
-# 6. Save confusion matrix as image
-# ============================================================
-
-png(paste0(output_dir, "nb_confusion_matrix.png"), width = 900, height = 700, res = 120)
-
-fourfoldplot(
-  cm_nb$table,
-  color = c("#CC6666", "#99CC99"),
-  conf.level = 0,
-  margin = 1,
-  main = "Confusion Matrix - Naive Bayes"
-)
-
-dev.off()
-
-message("✓ nb_confusion_matrix.png saved")
-
-# ============================================================
-# 7. Summary
+# 6. Summary
 # ============================================================
 
 message("\n=== NAIVE BAYES SUMMARY ===")
