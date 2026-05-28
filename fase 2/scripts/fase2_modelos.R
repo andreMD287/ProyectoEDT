@@ -1,7 +1,7 @@
 # ============================================================
 # fase2_modelos.R
 # Phase 2: Model training, HPO, and evaluation
-# Models: Decision Tree (DT) and Artificial Neural Network (ANN)
+# Models: Decision Tree (DT), Artificial Neural Network (ANN), and KNN
 # ============================================================
 
 library(terra)
@@ -109,7 +109,30 @@ message("\n=== ANN (optimized, size=20, decay=0.01) ===")
 print(cm_ann)
 
 # ============================================================
-# 4. Summary
+# 4. K-Nearest Neighbor (KNN)
+# ============================================================
+
+# --- HPO ---
+grid_knn <- expand.grid(k = c(1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21))
+
+modelo_knn_hpo <- train(clase ~ B2+B3+B4+B5+B6+B7+B8+B8A+B11+B12,
+                        data      = train_n,
+                        method    = "knn",
+                        trControl = control,
+                        tuneGrid  = grid_knn)
+
+message("\nKNN HPO results:")
+print(modelo_knn_hpo)
+
+# --- Train optimized KNN (k = 5) ---
+pred_knn <- predict(modelo_knn_hpo, test_n)
+cm_knn   <- confusionMatrix(pred_knn, test_n$clase)
+
+message("\n=== KNN (optimized, k=5) ===")
+print(cm_knn)
+
+# ============================================================
+# 5. Summary
 # ============================================================
 
 message("\n=== COMPARATIVE SUMMARY ===")
@@ -119,3 +142,6 @@ message(sprintf("Decision Tree  | Accuracy: %.2f%% | Kappa: %.4f",
 message(sprintf("ANN            | Accuracy: %.2f%% | Kappa: %.4f",
                 cm_ann$overall["Accuracy"] * 100,
                 cm_ann$overall["Kappa"]))
+message(sprintf("KNN            | Accuracy: %.2f%% | Kappa: %.4f",
+                cm_knn$overall["Accuracy"] * 100,
+                cm_knn$overall["Kappa"]))
