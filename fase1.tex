@@ -22,7 +22,7 @@
 % TITLE
 %------------------------------------------------
 \title{
-\textbf{Phase 1: Problem Definition} \\
+\textbf{Phases 1 \& 2: Problem Definition, Pre-processing and Training} \\
 Comparative Analysis of Machine Learning Architectures \\
 for Satellite-Based Surface Monitoring \\
 \vspace{0.5cm}
@@ -44,6 +44,10 @@ Pontificia Universidad Javeriana
 \maketitle
 \tableofcontents
 \newpage
+
+%================================================
+\part{Phase 1: Problem Definition}
+%================================================
 
 %------------------------------------------------
 \section{Introduction}
@@ -118,7 +122,7 @@ This diversity of spectral responses makes the region suitable for machine learn
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{roi_map.png}
-\caption{Region of Interest (ROI) delimited over OpenStreetMap. The yellow rectangle covers approximately 402.70~km$^2$ centered on Armero Guayabal, Tolima, Colombia.}
+\caption{Region of Interest (ROI) delimited over OpenStreetMap. The rectangle covers approximately 402.70~km$^2$ centered on Armero Guayabal, Tolima, Colombia.}
 \label{fig:roi}
 \end{figure}
 
@@ -132,11 +136,11 @@ The project uses multispectral imagery from the Sentinel-2 mission developed by 
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{5cm}|m{8cm}|}
+\begin{tabular}{|m{4cm}|m{9cm}|}
 \hline
 \textbf{Attribute} & \textbf{Value} \\
 \hline
-Product Name & S2A\_MSIL2A\_20240815T152651\_N0511\_R025\_T18NWL \\
+Product Name & S2A\_MSIL2A\_20240815T152651\_\newline N0511\_R025\_T18NWL \\
 \hline
 Acquisition Date & August 15, 2024 \\
 \hline
@@ -300,27 +304,342 @@ clase & Ground truth land cover label \\
 \end{table}
 
 %------------------------------------------------
-\section{Expected Outcome}
-%------------------------------------------------
-
-The expected result of this first phase is the creation of a structured, balanced spectral dataset suitable for supervised machine learning training. This dataset will be used to evaluate five classification architectures:
-
-\begin{itemize}
-    \item Decision Trees (DT)
-    \item Support Vector Machines (SVM)
-    \item Artificial Neural Networks (ANN)
-    \item K-Nearest Neighbor (KNN)
-    \item Naive Bayes (NB)
-\end{itemize}
-
-Performance will be assessed using Confusion Matrix, Overall Accuracy, Kappa Coefficient, Precision, Recall, and F1-Score metrics.
-
-%------------------------------------------------
-\section{Conclusion}
+\section{Phase 1 Conclusion}
 %------------------------------------------------
 
 This first phase establishes the conceptual and technical foundation of the project by defining the study area, selecting the satellite imagery, and designing the methodology for spectral data extraction. The generated dataset of 8,000 balanced pixels across four land cover classes will support future classification, validation, and thematic mapping tasks for the Armero region.
 
 The use of Sentinel-2 L2A imagery with 15\% cloud coverage from August 15, 2024, combined with a balanced sampling strategy of 2,000 pixels per class, provides a robust and representative training set for the subsequent machine learning phases.
+
+\newpage
+
+%================================================
+\part{Phase 2: Pre-processing and Training}
+%================================================
+
+%------------------------------------------------
+\section{Introduction}
+%------------------------------------------------
+
+This second phase focuses on the implementation and initial evaluation of five supervised machine learning models for land cover classification over the Armero study area. Each model was trained on the balanced spectral dataset generated in Phase 1, which contains 8,000 pixels (2,000 per class) extracted from Sentinel-2 L2A imagery. The dataset was split into 70\% for training (5,600 pixels) and 30\% for validation (2,400 pixels).
+
+All models were evaluated using standard classification metrics: Overall Accuracy, Kappa Coefficient, Precision, Recall, and F1-Score. Additionally, Hyperparameter Optimization (HPO) was performed on each model using 5-fold cross-validation to maximize predictive performance.
+
+%------------------------------------------------
+\section{Data Preparation}
+%------------------------------------------------
+
+\subsection{Dataset Split}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|c|}
+\hline
+\textbf{Subset} & \textbf{Pixels} & \textbf{Percentage} \\
+\hline
+Training & 5,600 & 70\% \\
+\hline
+Validation & 2,400 & 30\% \\
+\hline
+\textbf{Total} & \textbf{8,000} & \textbf{100\%} \\
+\hline
+\end{tabular}
+\caption{Training and validation split}
+\end{table}
+
+\subsection{Data Normalization}
+
+Models sensitive to feature scale (ANN, SVM, KNN) were trained on a normalized version of the dataset, where each spectral band was rescaled to the range $[0, 1]$ using min-max normalization:
+
+\begin{equation}
+x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
+\end{equation}
+
+Decision Trees and Naive Bayes were trained on the original (unnormalized) values, as these models are not affected by feature scale.
+
+%------------------------------------------------
+\section{Model 1: Decision Tree (DT)}
+%------------------------------------------------
+
+\subsection{Description}
+
+A Decision Tree is a logic-based model that partitions the spectral feature space through hierarchical binary splits. Each node selects the band and threshold that maximizes class separation. The key hyperparameter is the complexity parameter \texttt{cp}, which controls tree pruning: lower values allow deeper, more complex trees.
+
+\subsection{Hyperparameter Optimization}
+
+HPO was performed using 5-fold cross-validation over the following grid:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Parameter} & \textbf{Values Tested} \\
+\hline
+cp (Complexity Parameter) & 0.001, 0.005, 0.01, 0.05, 0.1 \\
+\hline
+\end{tabular}
+\caption{Hyperparameter grid for Decision Tree}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{dt_hpo.png}
+\caption{Cross-validation accuracy as a function of the complexity parameter (cp) for the Decision Tree. Lower cp values yield higher accuracy, with the optimal value at cp = 0.001.}
+\label{fig:dt_hpo}
+\end{figure}
+
+The optimal value was \textbf{cp = 0.001}, selected based on maximum cross-validation accuracy.
+
+\subsection{Confusion Matrix}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\hline
+Cultivos       & 416 & 146 &  11 &  31 \\
+\hline
+Suelo\_desnudo & 139 & 398 &  29 &  50 \\
+\hline
+Vegetacion     &  16 &  34 & 553 &  10 \\
+\hline
+Zona\_urbana   &  29 &  22 &   7 & 509 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix for the optimized Decision Tree (cp = 0.001)}
+\end{table}
+
+\subsection{Performance Metrics}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+Cultivos       & 0.6933 & 0.8956 & 0.6887 & 0.6933 & 0.6910 \\
+\hline
+Suelo\_desnudo & 0.6633 & 0.8789 & 0.6461 & 0.6633 & 0.6546 \\
+\hline
+Vegetacion     & 0.9217 & 0.9667 & 0.9021 & 0.9217 & 0.9118 \\
+\hline
+Zona\_urbana   & 0.8483 & 0.9678 & 0.8977 & 0.8483 & 0.8723 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics for the optimized Decision Tree}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Overall Accuracy & 78.17\% \\
+\hline
+Kappa Coefficient & 0.7089 \\
+\hline
+\end{tabular}
+\caption{Overall metrics for the optimized Decision Tree}
+\end{table}
+
+%------------------------------------------------
+\section{Model 2: Support Vector Machine (SVM)}
+%------------------------------------------------
+
+\subsection{Description}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Hyperparameter Optimization}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Confusion Matrix}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Performance Metrics}
+
+% [COMPLETE THIS SECTION]
+
+%------------------------------------------------
+\section{Model 3: Artificial Neural Network (ANN)}
+%------------------------------------------------
+
+\subsection{Description}
+
+An Artificial Neural Network (ANN) is a computational model composed of interconnected layers of neurons. The architecture used corresponds to a single hidden layer feedforward network (implemented via the \texttt{nnet} package in R). The key hyperparameters are \texttt{size} (number of neurons in the hidden layer) and \texttt{decay} (L2 regularization parameter to prevent overfitting). Input bands were normalized to $[0,1]$ prior to training.
+
+\subsection{Hyperparameter Optimization}
+
+HPO was performed using 5-fold cross-validation over the following grid:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Parameter} & \textbf{Values Tested} \\
+\hline
+size (hidden neurons) & 5, 10, 15, 20 \\
+\hline
+decay (regularization) & 0.001, 0.01, 0.1 \\
+\hline
+\end{tabular}
+\caption{Hyperparameter grid for ANN}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Size} & \textbf{Decay} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
+\hline
+5  & 0.001 & 0.8505 & 0.8007 \\
+5  & 0.010 & 0.8539 & 0.8052 \\
+5  & 0.100 & 0.8407 & 0.7876 \\
+10 & 0.001 & 0.8673 & 0.8231 \\
+10 & 0.010 & 0.8714 & 0.8286 \\
+10 & 0.100 & 0.8557 & 0.8076 \\
+15 & 0.001 & 0.8746 & 0.8329 \\
+15 & 0.010 & 0.8775 & 0.8367 \\
+15 & 0.100 & 0.8586 & 0.8114 \\
+\textbf{20} & \textbf{0.010} & \textbf{0.8782} & \textbf{0.8376} \\
+20 & 0.001 & 0.8734 & 0.8312 \\
+20 & 0.100 & 0.8580 & 0.8107 \\
+\hline
+\end{tabular}
+\caption{Cross-validation results for all ANN hyperparameter combinations. Best configuration in bold.}
+\end{table}
+
+The optimal configuration was \textbf{size = 20, decay = 0.01}.
+
+\subsection{Confusion Matrix}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\hline
+Cultivos       & 481 &  89 &  7 &  12 \\
+\hline
+Suelo\_desnudo &  92 & 474 & 18 &  18 \\
+\hline
+Vegetacion     &   9 &  31 & 574 &  1 \\
+\hline
+Zona\_urbana   &  18 &   6 &  1 & 569 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix for the optimized ANN (size = 20, decay = 0.01)}
+\end{table}
+
+\subsection{Performance Metrics}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+Cultivos       & 0.8017 & 0.9400 & 0.8166 & 0.8017 & 0.8091 \\
+\hline
+Suelo\_desnudo & 0.7900 & 0.9289 & 0.7874 & 0.7900 & 0.7887 \\
+\hline
+Vegetacion     & 0.9567 & 0.9772 & 0.9333 & 0.9567 & 0.9448 \\
+\hline
+Zona\_urbana   & 0.9483 & 0.9861 & 0.9579 & 0.9483 & 0.9531 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics for the optimized ANN}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Overall Accuracy & 87.42\% \\
+\hline
+Kappa Coefficient & 0.8322 \\
+\hline
+\end{tabular}
+\caption{Overall metrics for the optimized ANN}
+\end{table}
+
+%------------------------------------------------
+\section{Model 4: K-Nearest Neighbor (KNN)}
+%------------------------------------------------
+
+\subsection{Description}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Hyperparameter Optimization}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Confusion Matrix}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Performance Metrics}
+
+% [COMPLETE THIS SECTION]
+
+%------------------------------------------------
+\section{Model 5: Naive Bayes (NB)}
+%------------------------------------------------
+
+\subsection{Description}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Hyperparameter Optimization}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Confusion Matrix}
+
+% [COMPLETE THIS SECTION]
+
+\subsection{Performance Metrics}
+
+% [COMPLETE THIS SECTION]
+
+%------------------------------------------------
+\section{Comparative Summary}
+%------------------------------------------------
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{|m{2.5cm}|c|c|m{3.5cm}|m{3.5cm}|}
+\hline
+\textbf{Model} & \textbf{Overall Accuracy} & \textbf{Kappa} & \textbf{Best Class} & \textbf{Worst Class} \\
+\hline
+Decision Tree  & 78.17\% & 0.7089 & Vegetacion (92.17\%) & Suelo\_desnudo (66.33\%) \\
+\hline
+SVM            & -- & -- & -- & -- \\
+\hline
+ANN            & 87.42\% & 0.8322 & Vegetacion (95.67\%) & Suelo\_desnudo (79.00\%) \\
+\hline
+KNN            & -- & -- & -- & -- \\
+\hline
+Naive Bayes    & -- & -- & -- & -- \\
+\hline
+\end{tabular}
+\caption{Comparative performance summary. Dashes (--) indicate sections pending completion by team members.}
+\end{table}
+
+%------------------------------------------------
+\section{Phase 2 Conclusion}
+%------------------------------------------------
+
+Among the two models evaluated in this report, the Artificial Neural Network consistently outperformed the Decision Tree across all metrics, achieving 87.42\% overall accuracy and a Kappa coefficient of 0.8322 compared to 78.17\% and 0.7089 for the optimized Decision Tree. Both models showed the highest classification performance for the \textit{Vegetacion} and \textit{Zona\_urbana} classes, while \textit{Suelo\_desnudo} and \textit{Cultivos} proved more challenging to distinguish spectrally.
+
+The complete comparative analysis, including SVM, KNN, and Naive Bayes results, will be integrated once all team contributions are compiled.
 
 \end{document}
