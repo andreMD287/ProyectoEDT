@@ -575,19 +575,106 @@ Kappa Coefficient & 0.8322 \\
 
 \subsection{Description}
 
-% [COMPLETE THIS SECTION]
+K-Nearest Neighbor (KNN) is an instance-based, non-parametric classifier that assigns the label of a new pixel according to the majority class among its nearest neighbors in the spectral feature space. Unlike parametric models, KNN does not learn an explicit decision function during training; instead, it stores the normalized training samples and computes distances at prediction time. Because distance-based methods are highly sensitive to feature scale, all input bands were normalized to the range $[0,1]$ before training.
 
 \subsection{Hyperparameter Optimization}
 
-% [COMPLETE THIS SECTION]
+HPO was performed using 5-fold cross-validation over the following grid:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Parameter} & \textbf{Values Tested} \\
+\hline
+k (nearest neighbors) & 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 \\
+\hline
+\end{tabular}
+\caption{Hyperparameter grid for KNN}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{k} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
+\hline
+1  & 0.8195 & 0.7593 \\
+3  & 0.8225 & 0.7633 \\
+\textbf{5}  & \textbf{0.8254} & \textbf{0.7671} \\
+7  & 0.8193 & 0.7590 \\
+9  & 0.8134 & 0.7512 \\
+11 & 0.8143 & 0.7524 \\
+13 & 0.8138 & 0.7517 \\
+15 & 0.8123 & 0.7498 \\
+17 & 0.8102 & 0.7469 \\
+19 & 0.8107 & 0.7476 \\
+21 & 0.8088 & 0.7450 \\
+\hline
+\end{tabular}
+\caption{Cross-validation results for all KNN hyperparameter combinations. Best configuration in bold.}
+\end{table}
+
+The optimal configuration was \textbf{k = 5}.
 
 \subsection{Confusion Matrix}
 
-% [COMPLETE THIS SECTION]
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\hline
+Cultivos       & 459 & 125 & 10 & 12 \\
+\hline
+Suelo\_desnudo & 102 & 424 & 23 & 46 \\
+\hline
+Vegetacion     & 17  & 45  & 566 & 15 \\
+\hline
+Zona\_urbana   & 22  & 6   & 1   & 527 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix for the optimized KNN (k = 5)}
+\end{table}
 
 \subsection{Performance Metrics}
 
-% [COMPLETE THIS SECTION]
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+Cultivos       & 0.7650 & 0.9183 & 0.7574 & 0.7650 & 0.7612 \\
+\hline
+Suelo\_desnudo & 0.7067 & 0.9050 & 0.7126 & 0.7067 & 0.7096 \\
+\hline
+Vegetacion     & 0.9433 & 0.9572 & 0.8802 & 0.9433 & 0.9107 \\
+\hline
+Zona\_urbana   & 0.8783 & 0.9839 & 0.9478 & 0.8783 & 0.9118 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics for the optimized KNN}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Overall Accuracy & 82.33\% \\
+\hline
+Kappa Coefficient & 0.7644 \\
+\hline
+\end{tabular}
+\caption{Overall metrics for the optimized KNN}
+\end{table}
+
+\noindent\textbf{Overall Accuracy:} 82.33\%
+
+\vspace{0.3cm}
+\noindent The KNN model achieved solid performance overall, sitting between the Decision Tree and the ANN in terms of predictive quality. It classified \textit{Vegetacion} and \textit{Zona\_urbana} more reliably than the other classes, while the main source of confusion remained the spectral overlap between \textit{Cultivos} and \textit{Suelo\_desnudo}, which are visually and spectrally similar in the study area.
 
 %------------------------------------------------
 \section{Model 5: Naive Bayes (NB)}
@@ -626,7 +713,7 @@ SVM            & -- & -- & -- & -- \\
 \hline
 ANN            & 87.42\% & 0.8322 & Vegetacion (95.67\%) & Suelo\_desnudo (79.00\%) \\
 \hline
-KNN            & -- & -- & -- & -- \\
+KNN            & 82.33\% & 0.7644 & Vegetacion (94.33\%) & Suelo\_desnudo (70.67\%) \\
 \hline
 Naive Bayes    & -- & -- & -- & -- \\
 \hline
@@ -638,8 +725,8 @@ Naive Bayes    & -- & -- & -- & -- \\
 \section{Phase 2 Conclusion}
 %------------------------------------------------
 
-Among the two models evaluated in this report, the Artificial Neural Network consistently outperformed the Decision Tree across all metrics, achieving 87.42\% overall accuracy and a Kappa coefficient of 0.8322 compared to 78.17\% and 0.7089 for the optimized Decision Tree. Both models showed the highest classification performance for the \textit{Vegetacion} and \textit{Zona\_urbana} classes, while \textit{Suelo\_desnudo} and \textit{Cultivos} proved more challenging to distinguish spectrally.
+Among the models evaluated in the completed sections of this report, the Artificial Neural Network consistently outperformed the Decision Tree and KNN across all metrics, achieving 87.42\% overall accuracy and a Kappa coefficient of 0.8322. KNN followed with 82.33\% accuracy and 0.7644 Kappa, while the Decision Tree obtained 78.17\% and 0.7089. Across the three models, \textit{Vegetacion} and \textit{Zona\_urbana} remained the easiest classes to distinguish, while \textit{Suelo\_desnudo} and \textit{Cultivos} continued to show the strongest spectral overlap.
 
-The complete comparative analysis, including SVM, KNN, and Naive Bayes results, will be integrated once all team contributions are compiled.
+The complete comparative analysis, including SVM and Naive Bayes results, will be integrated once all team contributions are compiled.
 
 \end{document}
