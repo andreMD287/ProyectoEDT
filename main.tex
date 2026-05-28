@@ -455,79 +455,85 @@ A Support Vector Machine is a margin-based classifier that searches for the hype
 
 \subsection{Hyperparameter Optimization}
 
-The model was trained with a fixed configuration rather than an exhaustive search: an RBF kernel with a regularization parameter $C = 10$ and \texttt{gamma = "scale"} (i.e.\ $1/(n_{\mathrm{features}} \cdot \mathrm{Var}(X))$). These values were selected as reasonable defaults for spectral data; a systematic grid search over $C$ and \texttt{gamma} is deferred to the optimization phase.
+The Support Vector Machine was implemented in R following the
+methodology of Lab~06, using the \texttt{kernlab} package for model
+fitting and the \texttt{caret} package for pre-processing and
+evaluation. The ten spectral bands (B2--B12) were standardized
+(centered and scaled) using \texttt{preProcess}, since SVM relies on
+spatial (Euclidean) distances and is therefore sensitive to feature
+magnitude. The dataset was partitioned into 70\% training and 30\%
+testing (2400 pixels) with a fixed seed (\texttt{set.seed(42)}) for
+reproducibility.
 
 \begin{table}[H]
 \centering
 \begin{tabular}{|c|c|}
 \hline
-\textbf{Parameter} & \textbf{Value} \\
+\textbf{Kernel} & \textbf{Overall Accuracy (\%)} \\
 \hline
-Kernel & RBF (Radial Basis Function) \\
+Linear (\texttt{vanilladot})     & 79.71 \\
 \hline
-Regularization $C$ & 10 \\
+Polynomial (\texttt{polydot})    & 79.71 \\
 \hline
-gamma & scale \\
+Radial Basis Function (\texttt{rbfdot}) & \textbf{85.42} \\
 \hline
 \end{tabular}
-\caption{Configuration used for the Support Vector Machine}
+\caption{SVM performance comparison by kernel type}
 \end{table}
 
-\subsection{Confusion Matrix}
+The Radial Basis Function (RBF) kernel achieved the best performance,
+confirming that the spectral classes are not linearly separable and
+benefit from the kernel trick. The remaining analysis is therefore
+based on the RBF model.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|}
 \hline
-\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\textbf{Prediction \textbackslash{} Reference} & \textbf{Cultivos (Croplands)} & \textbf{Suelo desn. (Bare Soil)} & \textbf{Vegetaci\'on (Vegetation)} & \textbf{Z. urbana (Urban)} \\
 \hline
-Cultivos       & 461 & 113 &   9 &   7 \\
+Cultivos (Croplands)      & 424 & 77  & 9   & 7   \\
 \hline
-Suelo\_desnudo & 103 & 448 &   9 &  18 \\
+Suelo desnudo (Bare Soil) & 144 & 485 & 10  & 21  \\
 \hline
-Vegetacion     &  12 &  32 & 581 &   2 \\
+Vegetaci\'on (Vegetation) & 11  & 34  & 581 & 12  \\
 \hline
-Zona\_urbana   &  24 &   7 &   1 & 573 \\
-\hline
-\end{tabular}
-\caption{Confusion matrix for the Support Vector Machine (RBF kernel)}
-\end{table}
-
-\subsection{Performance Metrics}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|m{4cm}|c|c|c|c|c|}
-\hline
-\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
-\hline
-Cultivos       & 0.7683 & 0.9283 & 0.7814 & 0.7683 & 0.7750 \\
-\hline
-Suelo\_desnudo & 0.7467 & 0.9278 & 0.7751 & 0.7467 & 0.7606 \\
-\hline
-Vegetacion     & 0.9683 & 0.9744 & 0.9266 & 0.9683 & 0.9470 \\
-\hline
-Zona\_urbana   & 0.9550 & 0.9822 & 0.9471 & 0.9550 & 0.9510 \\
+Zona urbana (Urban)       & 21  & 4   & 0   & 560 \\
 \hline
 \end{tabular}
-\caption{Per-class performance metrics for the Support Vector Machine}
+\caption{Confusion matrix --- SVM with RBF kernel (test set, 2400 pixels)}
 \end{table}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{5cm}|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Metric} & \textbf{Value} \\
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} \\
 \hline
-Overall Accuracy & 85.96\% \\
+Cultivos (Croplands)      & 0.820 & 0.707 & 0.759 \\
 \hline
-Kappa Coefficient & 0.8128 \\
+Suelo desnudo (Bare Soil) & 0.735 & 0.808 & 0.770 \\
+\hline
+Vegetaci\'on (Vegetation) & 0.911 & 0.968 & 0.939 \\
+\hline
+Zona urbana (Urban)       & 0.957 & 0.933 & 0.945 \\
 \hline
 \end{tabular}
-\caption{Overall metrics for the Support Vector Machine}
+\caption{Per-class performance metrics --- SVM with RBF kernel}
 \end{table}
 
-The SVM achieved strong performance in distinguishing \textit{Vegetacion} (F1 = 0.9470) and \textit{Zona\_urbana} (F1 = 0.9510), whose spectral signatures are clearly separable. The main source of error was the mutual confusion between \textit{Cultivos} and \textit{Suelo\_desnudo}, which share similar reflectance values in several bands, reducing their individual F1-scores to approximately 0.77.
+\noindent\textbf{Overall Accuracy:} 85.42\% \quad \textbf{Kappa:} 0.806
+
+\vspace{0.3cm}
+\noindent The RBF model classified \textit{Vegetaci\'on (Vegetation)}
+(F1 = 0.939) and \textit{Zona urbana (Urban Area)} (F1 = 0.945) with
+high reliability, as their spectral signatures are clearly distinct.
+The main source of error was the mutual confusion between
+\textit{Cultivos (Croplands)} and \textit{Suelo desnudo (Bare Soil)}:
+144 cropland pixels were misclassified as bare soil and 77 in the
+opposite direction, which is expected since both surfaces share
+similar reflectance values in the visible and infrared bands. This
+reduced their individual F1-scores to approximately 0.76--0.77.
 
 %------------------------------------------------
 \section{Model 3: Artificial Neural Network (ANN)}
