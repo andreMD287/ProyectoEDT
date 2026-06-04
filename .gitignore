@@ -25,8 +25,7 @@
 *.acr
 *.alg
 *.xdy
-# PDF generado
-*.pdf
+
 
 # Configuración de VS Code
 .vscode/

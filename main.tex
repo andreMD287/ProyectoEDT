@@ -10,16 +10,16 @@
 \graphicspath{{fase 1/imagenes/}{fase 2/imagenes/}{fase 3/imagenes/}}
 \usepackage{booktabs}
 \usepackage{array}
-\usepackage{longtable}
 \usepackage{float}
 \usepackage{setspace}
 \usepackage{titlesec}
 \usepackage{hyperref}
 \usepackage{amsmath}
-
+\usepackage[expansion=false]{microtype}
 
 \geometry{margin=2.5cm}
 \setstretch{1.5}
+\renewcommand{\arraystretch}{1.2}
 
 %------------------------------------------------
 % TITLE
@@ -45,6 +45,7 @@ Pontificia Universidad Javeriana
 \begin{document}
 
 \maketitle
+\newpage
 \tableofcontents
 \newpage
 
@@ -947,11 +948,11 @@ The predicted GeoTIFF was imported into QGIS and rendered using a paletted/uniqu
 \hline
 \textbf{Code} & \textbf{Class} & \textbf{Color} \\
 \hline
-1 & cultivos & Orange \\
+1 & cultivos & Light green \\
 \hline
-2 & suelo\_desnudo & Brown \\
+2 & suelo\_desnudo & Orange \\
 \hline
-3 & urbano & Dark red \\
+3 & urbano & Blue \\
 \hline
 4 & vegetacion & Green \\
 \hline
@@ -961,12 +962,12 @@ The predicted GeoTIFF was imported into QGIS and rendered using a paletted/uniqu
 
 \subsection{Resulting Map}
 
-Figure~\ref{fig:thematic_map} shows the final classified map over an OpenStreetMap base layer. Vegetation (green) dominates the hillsides surrounding the valley, while bare soil (brown) and croplands (orange) concentrate in the flatter central zone along the Magdalena River. The urban class (dark red) appears mainly in the central-south sector, corresponding to the present-day settlement of Armero Guayabal and the area historically buried by the 1985 lahars.
+Figure~\ref{fig:thematic_map} shows the final classified map over an OpenStreetMap base layer. Vegetation (green) dominates the hillsides surrounding the valley, while bare soil (orange) and croplands (light green) concentrate in the flatter central zone along the Magdalena River. The urban class (blue) appears mainly in the central-south sector, corresponding to the present-day settlement of Armero Guayabal and the area historically buried by the 1985 lahars.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{fase 3/imagenes/mapa_fase3.png}
-\caption{Predicted land-cover map of the Armero study area, obtained by applying the optimized ANN model to the full Sentinel-2 scene. Green: vegetation; brown: bare soil; orange: croplands; dark red: urban areas.}
+\includegraphics[width=0.9\textwidth]{mapa_fase3.png}
+\caption{Predicted land-cover map of the Armero study area, obtained by applying the optimized ANN model to the full Sentinel-2 scene. Green: vegetation; light green: croplands; orange: bare soil; blue: urban areas.}
 \label{fig:thematic_map}
 \end{figure}
 
