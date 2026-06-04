@@ -6,7 +6,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{geometry}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
 \graphicspath{{fase 1/imagenes/}{fase 2/imagenes/}}
 \usepackage{booktabs}
 \usepackage{array}
@@ -15,6 +15,7 @@
 \usepackage{setspace}
 \usepackage{titlesec}
 \usepackage{hyperref}
+\usepackage{amsmath}
 
 \geometry{margin=2.5cm}
 \setstretch{1.5}
@@ -91,39 +92,39 @@ The Region of Interest (ROI) is centered on the former municipality of Armero, T
 \hline
 \textbf{Parameter} & \textbf{Value} \\
 \hline
-Minimum Longitude & $-74.97345^\circ$ W \\
+Minimum Longitude & $-74.925728^\circ$ W \\
 \hline
-Maximum Longitude & $-74.787712^\circ$ W \\
+Maximum Longitude & $-74.834747^\circ$ W \\
 \hline
-Minimum Latitude & $4.943197^\circ$ N \\
+Minimum Latitude  & $4.997067^\circ$ N \\
 \hline
-Maximum Latitude & $5.117959^\circ$ N \\
+Maximum Latitude  & $5.086328^\circ$ N \\
 \hline
-Approximate Center & $5.03^\circ$ N, $-74.88^\circ$ W \\
+Approximate Center & $5.042^\circ$ N, $-74.880^\circ$ W \\
 \hline
-Total Area & 402.70 km$^2$ \\
+Total Area & $\approx$~100.1~km$^2$ (~10~km~$\times$~10~km) \\
 \hline
 \end{tabular}
-\caption{ROI coordinates obtained from Copernicus Browser}
+\caption{ROI coordinates defined as a GeoJSON polygon}
 \end{table}
 
 \subsection{Study Area Characteristics}
 
-The selected ROI was drawn using the Copernicus Browser polygon tool and contains a diverse range of land cover types:
+The selected ROI covers approximately 10~km~$\times$~10~km, tightly centered on the former urban area of Armero and its immediate surroundings. It contains a diverse range of land cover types:
 
 \begin{itemize}
-    \item Agricultural areas and croplands in the flat zones of the Magdalena River valley
-    \item Natural vegetation and forest patches on hillsides
-    \item Bare soil and exposed terrain
-    \item Small urban areas corresponding to Armero Guayabal
+    \item Agricultural areas and croplands in the flat zones of the Magdalena River valley.
+    \item Natural vegetation and forest patches on surrounding hillsides.
+    \item Bare soil and exposed terrain, including lahar-affected zones still visible after the 1985 disaster.
+    \item Small urban areas corresponding to Armero Guayabal.
 \end{itemize}
 
-This diversity of spectral responses makes the region suitable for machine learning classification experiments.
+This diversity of spectral responses makes the region suitable for supervised machine learning classification experiments.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{roi_map.png}
-\caption{Region of Interest (ROI) delimited over OpenStreetMap. The rectangle covers approximately 402.70~km$^2$ centered on Armero Guayabal, Tolima, Colombia.}
+\caption{Region of Interest (ROI) centered on Armero Guayabal, Tolima, Colombia. The rectangle covers approximately 100.1~km$^2$ (~10~km~$\times$~10~km).}
 \label{fig:roi}
 \end{figure}
 
@@ -180,31 +181,31 @@ Image Format & GeoTIFF (.tif) \\
 \hline
 \textbf{Band} & \textbf{Description} & \textbf{Native Resolution} \\
 \hline
-B2 & Blue & 10 m \\
+B2  & Blue                        & 10~m \\
 \hline
-B3 & Green & 10 m \\
+B3  & Green                       & 10~m \\
 \hline
-B4 & Red & 10 m \\
+B4  & Red                         & 10~m \\
 \hline
-B5 & Vegetation Red Edge 1 & 20 m (resampled to 10 m) \\
+B5  & Vegetation Red Edge 1       & 20~m (resampled to 10~m) \\
 \hline
-B6 & Vegetation Red Edge 2 & 20 m (resampled to 10 m) \\
+B6  & Vegetation Red Edge 2       & 20~m (resampled to 10~m) \\
 \hline
-B7 & Vegetation Red Edge 3 & 20 m (resampled to 10 m) \\
+B7  & Vegetation Red Edge 3       & 20~m (resampled to 10~m) \\
 \hline
-B8 & Near Infrared (NIR) & 10 m \\
+B8  & Near Infrared (NIR)         & 10~m \\
 \hline
-B8A & Narrow Near Infrared & 20 m (resampled to 10 m) \\
+B8A & Narrow Near Infrared        & 20~m (resampled to 10~m) \\
 \hline
-B11 & Short Wave Infrared 1 (SWIR) & 20 m (resampled to 10 m) \\
+B11 & Short Wave Infrared 1 (SWIR) & 20~m (resampled to 10~m) \\
 \hline
-B12 & Short Wave Infrared 2 (SWIR) & 20 m (resampled to 10 m) \\
+B12 & Short Wave Infrared 2 (SWIR) & 20~m (resampled to 10~m) \\
 \hline
 \end{tabular}
 \caption{Spectral bands included in the multi-band stack}
 \end{table}
 
-Bands at 20 m resolution (B5, B6, B7, B8A, B11, B12) were resampled to 10 m using bilinear interpolation via the \texttt{resample()} function from the \texttt{terra} package in R, ensuring spatial consistency across all bands.
+Bands at 20~m resolution (B5, B6, B7, B8A, B11, B12) were resampled to 10~m using bilinear interpolation via the \texttt{resample()} function from the \texttt{terra} package in R, ensuring spatial consistency across all bands.
 
 %------------------------------------------------
 \section{Dataset Creation Methodology}
@@ -215,26 +216,32 @@ The dataset creation process follows a supervised classification workflow based 
 \subsection{Methodology Overview}
 
 \begin{enumerate}
-    \item Download of Sentinel-2 Level-2A imagery from the Copernicus Browser (\url{https://browser.dataspace.copernicus.eu/}) for the Armero Guayabal region, selecting the August 15, 2024 scene with 15\% cloud coverage.
-    \item Stacking of individual spectral bands (JP2 format) into a single multi-band GeoTIFF using the \texttt{terra} package in R. Bands at 20~m resolution (B5, B6, B7, B8A, B11, B12) were resampled to 10~m to match the native resolution of B2, B3, B4, and B8.
-    \item Clipping of the multi-band stack to the ROI extent using QGIS (\textit{Raster $\rightarrow$ Extraction $\rightarrow$ Clip Raster by Extent}), generating the file \texttt{armero\_recortado.tif}.
-    \item Digitization of training polygons in QGIS over the clipped image in true color composite (R:B4, G:B3, B:B2) with contrast stretch between 500 and 3,500 reflectance units, identifying four land cover classes: \textit{Vegetacion}, \textit{Cultivos}, \textit{Suelo\_desnudo}, and \textit{Zona\_urbana}.
-    \item Extraction of pixel-level spectral values within training polygons using the \texttt{extract()} function from the \texttt{terra} package, including geographic coordinates ($x$, $y$).
+    \item Download of Sentinel-2 Level-2A imagery from the Copernicus Data Space (\url{https://dataspace.copernicus.eu/}) for the Armero Guayabal region, selecting the August 15, 2024 scene with 15\% cloud coverage.
+
+    \item Stacking of individual spectral bands (JP2 format) into a single multi-band GeoTIFF using the \texttt{terra} package in R (\texttt{fase1\_stack.R}). Bands at 20~m resolution (B5, B6, B7, B8A, B11, B12) were resampled to 10~m to match the native resolution of B2, B3, B4, and B8, producing the file \texttt{armero\_stack.tif}.
+
+    \item Clipping of the multi-band stack to the ROI extent using a Python script (\texttt{fase1\_clip.py}) with the \texttt{rasterio} library. The ROI was defined as a GeoJSON polygon in WGS84 (EPSG:4326) and reprojected to UTM Zone 18N (EPSG:32618) prior to clipping via \texttt{pyproj}, generating the file \texttt{armero\_recortado.tif}.
+
+    \item Digitization of training polygons in QGIS over the clipped image visualized in true color composite (R:B4, G:B3, B:B2), identifying four land cover classes: \textit{vegetacion}, \textit{cultivos}, \textit{suelo\_desnudo}, and \textit{urbano}. Polygons were saved as a GeoPackage file (\texttt{muestras\_armero.gpkg}).
+
+    \item Extraction of pixel-level spectral values within training polygons using the \texttt{extract()} function from the \texttt{terra} package in R (\texttt{fase1\_dataset.R}), including geographic coordinates ($x$, $y$).
+
     \item Balanced random sampling of 2,000 pixels per class (8,000 total) using the \texttt{dplyr} package (\texttt{slice\_sample()}), ensuring class balance and computational efficiency.
+
     \item Export of the final dataset in Tab-Separated Values (TSV) format as \texttt{training\_data.tsv}.
 \end{enumerate}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{satellite_image.png}
-\caption{Clipped Sentinel-2 image (\texttt{armero\_recortado.tif}) in true color composite (B4-B3-B2) with contrast stretch between 500 and 3,500 reflectance units. Dark green areas correspond to dense vegetation; light brown areas correspond to bare soil and croplands; the white cluster at center is Armero Guayabal.}
+\caption{Clipped Sentinel-2 image (\texttt{armero\_recortado.tif}) in true color composite (B4-B3-B2). Green areas correspond to dense vegetation; light brown areas correspond to bare soil and croplands; the white cluster near center is Armero Guayabal.}
 \label{fig:satellite}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{training_polygons.png}
-\caption{Training polygons digitized over the Armero study area, color-coded by land cover class (\textit{Vegetacion}, \textit{Cultivos}, \textit{Suelo\_desnudo}, \textit{Zona\_urbana}).}
+\caption{Training polygons digitized over the Armero study area, color-coded by land cover class: \textit{vegetacion} (green), \textit{cultivos} (orange), \textit{suelo\_desnudo} (black), and \textit{urbano} (white).}
 \label{fig:polygons}
 \end{figure}
 
@@ -242,25 +249,25 @@ The dataset creation process follows a supervised classification workflow based 
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{5cm}|c|c|}
+\begin{tabular}{|m{4cm}|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Pixels Sampled} & \textbf{Percentage} \\
+\textbf{Class} & \textbf{Available Pixels} & \textbf{Pixels Sampled} & \textbf{Percentage} \\
 \hline
-Vegetacion (Vegetation) & 2,000 & 25\% \\
+vegetacion     & 40,077 & 2,000 & 25\% \\
 \hline
-Cultivos (Croplands) & 2,000 & 25\% \\
+cultivos       & 34,370 & 2,000 & 25\% \\
 \hline
-Suelo\_desnudo (Bare Soil) & 2,000 & 25\% \\
+suelo\_desnudo & 23,721 & 2,000 & 25\% \\
 \hline
-Zona\_urbana (Urban Area) & 2,000 & 25\% \\
+urbano         &  9,553 & 2,000 & 25\% \\
 \hline
-\textbf{Total} & \textbf{8,000} & \textbf{100\%} \\
+\textbf{Total} & \textbf{107,721} & \textbf{8,000} & \textbf{100\%} \\
 \hline
 \end{tabular}
-\caption{Pixel distribution per land cover class (balanced sampling)}
+\caption{Available and sampled pixels per land cover class}
 \end{table}
 
-\noindent\textit{Note:} Water bodies were not included as a class due to the difficulty of reliably identifying narrow river channels at 10~m spatial resolution within the study area.
+\noindent\textit{Note:} Water bodies were not included as a distinct class due to the difficulty of reliably delineating narrow river channels at 10~m spatial resolution within this study area.
 
 %------------------------------------------------
 \section{Dataset Structure}
@@ -274,29 +281,29 @@ The generated TSV file \texttt{training\_data.tsv} contains 8,000 rows, each rep
 \hline
 \textbf{Column} & \textbf{Description} \\
 \hline
-x & Pixel easting coordinate in UTM Zone 18N (EPSG:32618) \\
+x   & Pixel easting coordinate in UTM Zone 18N (EPSG:32618) \\
 \hline
-y & Pixel northing coordinate in UTM Zone 18N (EPSG:32618) \\
+y   & Pixel northing coordinate in UTM Zone 18N (EPSG:32618) \\
 \hline
-B2 & Blue band surface reflectance (10 m) \\
+B2  & Blue band surface reflectance (10~m) \\
 \hline
-B3 & Green band surface reflectance (10 m) \\
+B3  & Green band surface reflectance (10~m) \\
 \hline
-B4 & Red band surface reflectance (10 m) \\
+B4  & Red band surface reflectance (10~m) \\
 \hline
-B5 & Red Edge 1 surface reflectance (resampled to 10 m) \\
+B5  & Red Edge 1 surface reflectance (resampled to 10~m) \\
 \hline
-B6 & Red Edge 2 surface reflectance (resampled to 10 m) \\
+B6  & Red Edge 2 surface reflectance (resampled to 10~m) \\
 \hline
-B7 & Red Edge 3 surface reflectance (resampled to 10 m) \\
+B7  & Red Edge 3 surface reflectance (resampled to 10~m) \\
 \hline
-B8 & Near Infrared surface reflectance (10 m) \\
+B8  & Near Infrared surface reflectance (10~m) \\
 \hline
-B8A & Narrow NIR surface reflectance (resampled to 10 m) \\
+B8A & Narrow NIR surface reflectance (resampled to 10~m) \\
 \hline
-B11 & SWIR 1 surface reflectance (resampled to 10 m) \\
+B11 & SWIR 1 surface reflectance (resampled to 10~m) \\
 \hline
-B12 & SWIR 2 surface reflectance (resampled to 10 m) \\
+B12 & SWIR 2 surface reflectance (resampled to 10~m) \\
 \hline
 clase & Ground truth land cover label \\
 \hline
@@ -308,9 +315,7 @@ clase & Ground truth land cover label \\
 \section{Phase 1 Conclusion}
 %------------------------------------------------
 
-This first phase establishes the conceptual and technical foundation of the project by defining the study area, selecting the satellite imagery, and designing the methodology for spectral data extraction. The generated dataset of 8,000 balanced pixels across four land cover classes will support future classification, validation, and thematic mapping tasks for the Armero region.
-
-The use of Sentinel-2 L2A imagery with 15\% cloud coverage from August 15, 2024, combined with a balanced sampling strategy of 2,000 pixels per class, provides a robust and representative training set for the subsequent machine learning phases.
+This first phase establishes the conceptual and technical foundation of the project by defining the study area, selecting the satellite imagery, and designing the methodology for spectral data extraction. The ROI covers approximately 100.1~km$^2$ tightly centered on Armero Guayabal, providing a focused and spectrally diverse scene for classification. The generated dataset of 8,000 balanced pixels across four land cover classes provides a robust and representative training set for the subsequent machine learning phases.
 
 \newpage
 
@@ -322,9 +327,11 @@ The use of Sentinel-2 L2A imagery with 15\% cloud coverage from August 15, 2024,
 \section{Introduction}
 %------------------------------------------------
 
-This second phase focuses on the implementation and initial evaluation of five supervised machine learning models for land cover classification over the Armero study area. Each model was trained on the balanced spectral dataset generated in Phase 1, which contains 8,000 pixels (2,000 per class) extracted from Sentinel-2 L2A imagery. The dataset was split into 70\% for training (5,600 pixels) and 30\% for validation (2,400 pixels).
+This second phase focuses on the implementation and evaluation of five supervised machine learning models for land cover classification over the Armero study area. Each model was trained on the balanced spectral dataset generated in Phase~1, which contains 8,000 pixels (2,000 per class) extracted from Sentinel-2 L2A imagery. The dataset was split into 70\% for training (5,600 pixels) and 30\% for validation (2,400 pixels).
 
-All models were evaluated using standard classification metrics: Overall Accuracy, Kappa Coefficient, Precision, Recall, and F1-Score. Where applicable, Hyperparameter Optimization (HPO) was performed using 5-fold cross-validation to maximize predictive performance.
+For each model, a \textbf{3~$\times$~3 Hyperparameter Optimization (HPO)} grid was applied using 5-fold cross-validation. This systematic search evaluated all nine combinations of two key hyperparameters (three values each), selecting the configuration with the highest cross-validation accuracy before final evaluation on the held-out test set.
+
+All models were evaluated using: Overall Accuracy, Kappa Coefficient, Precision, Recall, and F1-Score.
 
 %------------------------------------------------
 \section{Data Preparation}
@@ -338,25 +345,25 @@ All models were evaluated using standard classification metrics: Overall Accurac
 \hline
 \textbf{Subset} & \textbf{Pixels} & \textbf{Percentage} \\
 \hline
-Training & 5,600 & 70\% \\
+Training   & 5,600 & 70\% \\
 \hline
 Validation & 2,400 & 30\% \\
 \hline
 \textbf{Total} & \textbf{8,000} & \textbf{100\%} \\
 \hline
 \end{tabular}
-\caption{Training and validation split}
+\caption{Training and validation split (stratified, \texttt{set.seed(123)})}
 \end{table}
 
 \subsection{Data Normalization}
 
-Models sensitive to feature scale were trained on a rescaled version of the dataset. The ANN and KNN models used min-max normalization, where each spectral band was rescaled to the range $[0, 1]$:
+Models sensitive to feature scale were trained on a rescaled version of the dataset. The ANN and KNN models used min-max normalization, rescaling each spectral band to the range $[0,\,1]$:
 
 \begin{equation}
 x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
 \end{equation}
 
-The SVM was trained on standardized features (zero mean and unit variance), $z = (x - \mu)/\sigma$, which is the scaling expected by its RBF kernel. Decision Trees and Naive Bayes were trained on the original (unnormalized) values, as these models are not affected by feature scale.
+The SVM was trained on standardized features (zero mean, unit variance), $z = (x - \mu)/\sigma$, as required by its RBF kernel. Decision Trees and Naive Bayes were trained on the original unnormalized values, since these models are invariant to monotonic scaling.
 
 %------------------------------------------------
 \section{Model 1: Decision Tree (DT)}
@@ -364,32 +371,33 @@ The SVM was trained on standardized features (zero mean and unit variance), $z =
 
 \subsection{Description}
 
-A Decision Tree is a logic-based model that partitions the spectral feature space through hierarchical binary splits. Each node selects the band and threshold that maximizes class separation. The key hyperparameter is the complexity parameter \texttt{cp}, which controls tree pruning: lower values allow deeper, more complex trees.
+A Decision Tree partitions the spectral feature space through hierarchical binary splits. Each node selects the band and threshold that maximizes class separation. The complexity parameter \texttt{cp} controls pruning (lower values allow deeper trees), while \texttt{maxdepth} sets a hard limit on tree depth.
 
 \subsection{Hyperparameter Optimization}
 
-HPO was performed using 5-fold cross-validation over the following grid:
+HPO was performed using 5-fold cross-validation over a 3~$\times$~3 grid of \texttt{cp}~$\times$~\texttt{maxdepth}:
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Parameter} & \textbf{Values Tested} \\
+\textbf{maxdepth} & \textbf{cp} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
 \hline
-cp (Complexity Parameter) & 0.001, 0.005, 0.01, 0.05, 0.1 \\
+ 5 & 0.001 & 90.39\% & 0.8719 \\
+ 5 & 0.010 & 88.59\% & 0.8479 \\
+ 5 & 0.100 & 87.57\% & 0.8343 \\
+10 & 0.001 & 92.14\% & 0.8952 \\
+10 & 0.010 & 88.59\% & 0.8479 \\
+10 & 0.100 & 87.57\% & 0.8343 \\
+\textbf{20} & \textbf{0.001} & \textbf{92.34\%} & \textbf{0.8979} \\
+20 & 0.010 & 88.59\% & 0.8479 \\
+20 & 0.100 & 87.57\% & 0.8343 \\
 \hline
 \end{tabular}
-\caption{Hyperparameter grid for Decision Tree}
+\caption{3~$\times$~3 HPO grid results for Decision Tree. Best configuration in bold.}
 \end{table}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{dt_hpo.png}
-\caption{Cross-validation accuracy as a function of the complexity parameter (cp) for the Decision Tree. Lower cp values yield higher accuracy, with the optimal value at cp = 0.001.}
-\label{fig:dt_hpo}
-\end{figure}
-
-The optimal value was \textbf{cp = 0.001}, selected based on maximum cross-validation accuracy.
+The optimal configuration was \textbf{cp = 0.001, maxdepth = 20}. Lower \texttt{cp} values consistently outperformed larger ones regardless of depth, indicating that aggressive pruning hurts performance on this spectrally diverse dataset.
 
 \subsection{Confusion Matrix}
 
@@ -397,35 +405,35 @@ The optimal value was \textbf{cp = 0.001}, selected based on maximum cross-valid
 \centering
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\textbf{Predicted $\backslash$ Reference} & \textbf{cultivos} & \textbf{suelo\_desnudo} & \textbf{urbano} & \textbf{vegetacion} \\
 \hline
-Cultivos       & 416 & 146 &  11 &  31 \\
+cultivos       & 492 &  45 &  8 &   0 \\
 \hline
-Suelo\_desnudo & 139 & 398 &  29 &  50 \\
+suelo\_desnudo & 104 & 535 & 14 &   0 \\
 \hline
-Vegetacion     &  16 &  34 & 553 &  10 \\
+urbano         &   4 &  20 & 576 &  0 \\
 \hline
-Zona\_urbana   &  29 &  22 &   7 & 509 \\
+vegetacion     &   0 &   0 &  2 & 600 \\
 \hline
 \end{tabular}
-\caption{Confusion matrix for the optimized Decision Tree (cp = 0.001)}
+\caption{Confusion matrix for the optimized Decision Tree (cp = 0.001, maxdepth = 20)}
 \end{table}
 
 \subsection{Performance Metrics}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\begin{tabular}{|m{4cm}|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
 \hline
-Cultivos       & 0.6933 & 0.8956 & 0.6887 & 0.6933 & 0.6910 \\
+cultivos       & 0.9028 & 0.8200 & 0.8594 \\
 \hline
-Suelo\_desnudo & 0.6633 & 0.8789 & 0.6461 & 0.6633 & 0.6546 \\
+suelo\_desnudo & 0.8193 & 0.8917 & 0.8540 \\
 \hline
-Vegetacion     & 0.9217 & 0.9667 & 0.9021 & 0.9217 & 0.9118 \\
+urbano         & 0.9600 & 0.9600 & 0.9600 \\
 \hline
-Zona\_urbana   & 0.8483 & 0.9678 & 0.8977 & 0.8483 & 0.8723 \\
+vegetacion     & 0.9967 & 1.0000 & 0.9983 \\
 \hline
 \end{tabular}
 \caption{Per-class performance metrics for the optimized Decision Tree}
@@ -437,9 +445,9 @@ Zona\_urbana   & 0.8483 & 0.9678 & 0.8977 & 0.8483 & 0.8723 \\
 \hline
 \textbf{Metric} & \textbf{Value} \\
 \hline
-Overall Accuracy & 78.17\% \\
+Overall Accuracy  & 91.79\% \\
 \hline
-Kappa Coefficient & 0.7089 \\
+Kappa Coefficient & 0.8906 \\
 \hline
 \end{tabular}
 \caption{Overall metrics for the optimized Decision Tree}
@@ -451,140 +459,33 @@ Kappa Coefficient & 0.7089 \\
 
 \subsection{Description}
 
-A Support Vector Machine is a margin-based classifier that searches for the hyperplane maximizing the separation between classes in the feature space. To handle the non-linear separation of spectral classes, a Radial Basis Function (RBF) kernel was used, which implicitly maps the ten spectral bands into a higher-dimensional space. As SVM is sensitive to feature magnitude, the bands were standardized (zero mean and unit variance) prior to training, as described in the \textit{Data Normalization} subsection.
+A Support Vector Machine is a margin-based classifier that searches for the hyperplane maximizing the separation between classes in the spectral feature space. A Radial Basis Function (RBF) kernel was used to handle the non-linear separability of land cover classes. The cost parameter \texttt{C} controls the trade-off between margin width and training misclassifications, while \texttt{sigma} governs the width of the RBF kernel. All bands were standardized prior to training.
 
 \subsection{Hyperparameter Optimization}
 
-The Support Vector Machine was implemented in R following the
-methodology of Lab~06, using the \texttt{kernlab} package for model
-fitting and the \texttt{caret} package for pre-processing and
-evaluation. The ten spectral bands (B2--B12) were standardized
-(centered and scaled) using \texttt{preProcess}, since SVM relies on
-spatial (Euclidean) distances and is therefore sensitive to feature
-magnitude. The dataset was partitioned into 70\% training and 30\%
-testing (2400 pixels) with a fixed seed (\texttt{set.seed(42)}) for
-reproducibility.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|c|c|}
-\hline
-\textbf{Kernel} & \textbf{Overall Accuracy (\%)} \\
-\hline
-Linear (\texttt{vanilladot})     & 79.71 \\
-\hline
-Polynomial (\texttt{polydot})    & 79.71 \\
-\hline
-Radial Basis Function (\texttt{rbfdot}) & \textbf{85.42} \\
-\hline
-\end{tabular}
-\caption{SVM performance comparison by kernel type}
-\end{table}
-
-The Radial Basis Function (RBF) kernel achieved the best performance,
-confirming that the spectral classes are not linearly separable and
-benefit from the kernel trick. The remaining analysis is therefore
-based on the RBF model.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|c|c|c|c|c|}
-\hline
-\textbf{Prediction \textbackslash{} Reference} & \textbf{Cultivos (Croplands)} & \textbf{Suelo desn. (Bare Soil)} & \textbf{Vegetaci\'on (Vegetation)} & \textbf{Z. urbana (Urban)} \\
-\hline
-Cultivos (Croplands)      & 424 & 77  & 9   & 7   \\
-\hline
-Suelo desnudo (Bare Soil) & 144 & 485 & 10  & 21  \\
-\hline
-Vegetaci\'on (Vegetation) & 11  & 34  & 581 & 12  \\
-\hline
-Zona urbana (Urban)       & 21  & 4   & 0   & 560 \\
-\hline
-\end{tabular}
-\caption{Confusion matrix --- SVM with RBF kernel (test set, 2400 pixels)}
-\end{table}
+HPO was performed using 5-fold cross-validation over a 3~$\times$~3 grid of \texttt{C}~$\times$~\texttt{sigma}:
 
 \begin{table}[H]
 \centering
 \begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} \\
+\textbf{C} & \textbf{sigma} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
 \hline
-Cultivos (Croplands)      & 0.820 & 0.707 & 0.759 \\
-\hline
-Suelo desnudo (Bare Soil) & 0.735 & 0.808 & 0.770 \\
-\hline
-Vegetaci\'on (Vegetation) & 0.911 & 0.968 & 0.939 \\
-\hline
-Zona urbana (Urban)       & 0.957 & 0.933 & 0.945 \\
-\hline
-\end{tabular}
-\caption{Per-class performance metrics --- SVM with RBF kernel}
-\end{table}
-
-\noindent\textbf{Overall Accuracy:} 85.42\% \quad \textbf{Kappa:} 0.806
-
-\vspace{0.3cm}
-\noindent The RBF model classified \textit{Vegetaci\'on (Vegetation)}
-(F1 = 0.939) and \textit{Zona urbana (Urban Area)} (F1 = 0.945) with
-high reliability, as their spectral signatures are clearly distinct.
-The main source of error was the mutual confusion between
-\textit{Cultivos (Croplands)} and \textit{Suelo desnudo (Bare Soil)}:
-144 cropland pixels were misclassified as bare soil and 77 in the
-opposite direction, which is expected since both surfaces share
-similar reflectance values in the visible and infrared bands. This
-reduced their individual F1-scores to approximately 0.76--0.77.
-
-%------------------------------------------------
-\section{Model 3: Artificial Neural Network (ANN)}
-%------------------------------------------------
-
-\subsection{Description}
-
-An Artificial Neural Network (ANN) is a computational model composed of interconnected layers of neurons. The architecture used corresponds to a single hidden layer feedforward network (implemented via the \texttt{nnet} package in R). The key hyperparameters are \texttt{size} (number of neurons in the hidden layer) and \texttt{decay} (L2 regularization parameter to prevent overfitting). Input bands were normalized to $[0,1]$ prior to training.
-
-\subsection{Hyperparameter Optimization}
-
-HPO was performed using 5-fold cross-validation over the following grid:
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|c|c|}
-\hline
-\textbf{Parameter} & \textbf{Values Tested} \\
-\hline
-size (hidden neurons) & 5, 10, 15, 20 \\
-\hline
-decay (regularization) & 0.001, 0.01, 0.1 \\
+ 0.1 & 0.01 & 89.02\% & 0.8536 \\
+ 1.0 & 0.01 & 91.46\% & 0.8862 \\
+10.0 & 0.01 & 92.89\% & 0.9052 \\
+ 0.1 & 0.10 & 91.29\% & 0.8838 \\
+ 1.0 & 0.10 & 94.05\% & 0.9207 \\
+10.0 & 0.10 & 95.77\% & 0.9436 \\
+ 0.1 & 1.00 & 92.62\% & 0.9017 \\
+ 1.0 & 1.00 & 95.75\% & 0.9433 \\
+\textbf{10.0} & \textbf{1.00} & \textbf{96.91\%} & \textbf{0.9588} \\
 \hline
 \end{tabular}
-\caption{Hyperparameter grid for ANN}
+\caption{3~$\times$~3 HPO grid results for SVM (RBF kernel). Best configuration in bold.}
 \end{table}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{|c|c|c|c|}
-\hline
-\textbf{Size} & \textbf{Decay} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
-\hline
-5  & 0.001 & 0.8505 & 0.8007 \\
-5  & 0.010 & 0.8539 & 0.8052 \\
-5  & 0.100 & 0.8407 & 0.7876 \\
-10 & 0.001 & 0.8673 & 0.8231 \\
-10 & 0.010 & 0.8714 & 0.8286 \\
-10 & 0.100 & 0.8557 & 0.8076 \\
-15 & 0.001 & 0.8746 & 0.8329 \\
-15 & 0.010 & 0.8775 & 0.8367 \\
-15 & 0.100 & 0.8586 & 0.8114 \\
-\textbf{20} & \textbf{0.010} & \textbf{0.8782} & \textbf{0.8376} \\
-20 & 0.001 & 0.8734 & 0.8312 \\
-20 & 0.100 & 0.8580 & 0.8107 \\
-\hline
-\end{tabular}
-\caption{Cross-validation results for all ANN hyperparameter combinations. Best configuration in bold.}
-\end{table}
-
-The optimal configuration was \textbf{size = 20, decay = 0.01}.
+The optimal configuration was \textbf{C = 10, sigma = 1.0}. Accuracy increased monotonically with both \texttt{C} and \texttt{sigma}, confirming that the spectral classes benefit from a wide-kernel, high-margin model.
 
 \subsection{Confusion Matrix}
 
@@ -592,15 +493,103 @@ The optimal configuration was \textbf{size = 20, decay = 0.01}.
 \centering
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\textbf{Predicted $\backslash$ Reference} & \textbf{cultivos} & \textbf{suelo\_desnudo} & \textbf{urbano} & \textbf{vegetacion} \\
 \hline
-Cultivos       & 481 &  89 &  7 &  12 \\
+cultivos       & 545 &  9 & 0 & 0 \\
 \hline
-Suelo\_desnudo &  92 & 474 & 18 &  18 \\
+suelo\_desnudo &  55 & 584 & 6 & 0 \\
 \hline
-Vegetacion     &   9 &  31 & 574 &  1 \\
+urbano         &   0 &  7 & 593 & 0 \\
 \hline
-Zona\_urbana   &  18 &   6 &  1 & 569 \\
+vegetacion     &   0 &  0 &  1 & 600 \\
+\hline
+\end{tabular}
+\caption{Confusion matrix for the optimized SVM (C = 10, sigma = 1.0)}
+\end{table}
+
+\subsection{Performance Metrics}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+cultivos       & 0.9838 & 0.9083 & 0.9445 \\
+\hline
+suelo\_desnudo & 0.9054 & 0.9733 & 0.9382 \\
+\hline
+urbano         & 0.9883 & 0.9883 & 0.9883 \\
+\hline
+vegetacion     & 0.9983 & 1.0000 & 0.9992 \\
+\hline
+\end{tabular}
+\caption{Per-class performance metrics for the optimized SVM}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Overall Accuracy  & 96.75\% \\
+\hline
+Kappa Coefficient & 0.9567 \\
+\hline
+\end{tabular}
+\caption{Overall metrics for the optimized SVM}
+\end{table}
+
+%------------------------------------------------
+\section{Model 3: Artificial Neural Network (ANN)}
+%------------------------------------------------
+
+\subsection{Description}
+
+An Artificial Neural Network (ANN) is a computational model composed of interconnected layers of neurons that learn non-linear relationships between spectral signatures and land cover categories. The architecture used is a single hidden layer feedforward network implemented via the \texttt{nnet} package in R. The hyperparameter \texttt{size} controls the number of neurons in the hidden layer, while \texttt{decay} is an L2 regularization term that prevents overfitting. Input bands were normalized to $[0,\,1]$ prior to training.
+
+\subsection{Hyperparameter Optimization}
+
+HPO was performed using 5-fold cross-validation over a 3~$\times$~3 grid of \texttt{size}~$\times$~\texttt{decay}:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{size} & \textbf{decay} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
+\hline
+ 5 & 0.001 & 96.23\% & 0.9498 \\
+ 5 & 0.010 & 96.32\% & 0.9510 \\
+ 5 & 0.100 & 94.52\% & 0.9269 \\
+10 & 0.001 & 97.04\% & 0.9605 \\
+10 & 0.010 & 97.23\% & 0.9631 \\
+10 & 0.100 & 95.04\% & 0.9338 \\
+20 & 0.001 & 97.32\% & 0.9643 \\
+\textbf{20} & \textbf{0.010} & \textbf{97.46\%} & \textbf{0.9662} \\
+20 & 0.100 & 94.98\% & 0.9331 \\
+\hline
+\end{tabular}
+\caption{3~$\times$~3 HPO grid results for ANN. Best configuration in bold.}
+\end{table}
+
+The optimal configuration was \textbf{size = 20, decay = 0.01}. Larger networks (size = 20) consistently outperformed smaller ones, and moderate regularization (decay = 0.01) proved superior to both very low and very high values.
+
+\subsection{Confusion Matrix}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Predicted $\backslash$ Reference} & \textbf{cultivos} & \textbf{suelo\_desnudo} & \textbf{urbano} & \textbf{vegetacion} \\
+\hline
+cultivos       & 555 & 16 & 0 & 0 \\
+\hline
+suelo\_desnudo &  45 & 578 & 3 & 0 \\
+\hline
+urbano         &   0 &  6 & 597 & 0 \\
+\hline
+vegetacion     &   0 &  0 &  0 & 600 \\
 \hline
 \end{tabular}
 \caption{Confusion matrix for the optimized ANN (size = 20, decay = 0.01)}
@@ -610,17 +599,17 @@ Zona\_urbana   &  18 &   6 &  1 & 569 \\
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\begin{tabular}{|m{4cm}|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
 \hline
-Cultivos       & 0.8017 & 0.9400 & 0.8166 & 0.8017 & 0.8091 \\
+cultivos       & 0.9720 & 0.9250 & 0.9479 \\
 \hline
-Suelo\_desnudo & 0.7900 & 0.9289 & 0.7874 & 0.7900 & 0.7887 \\
+suelo\_desnudo & 0.9233 & 0.9633 & 0.9429 \\
 \hline
-Vegetacion     & 0.9567 & 0.9772 & 0.9333 & 0.9567 & 0.9448 \\
+urbano         & 0.9900 & 0.9950 & 0.9925 \\
 \hline
-Zona\_urbana   & 0.9483 & 0.9861 & 0.9579 & 0.9483 & 0.9531 \\
+vegetacion     & 1.0000 & 1.0000 & 1.0000 \\
 \hline
 \end{tabular}
 \caption{Per-class performance metrics for the optimized ANN}
@@ -632,9 +621,9 @@ Zona\_urbana   & 0.9483 & 0.9861 & 0.9579 & 0.9483 & 0.9531 \\
 \hline
 \textbf{Metric} & \textbf{Value} \\
 \hline
-Overall Accuracy & 87.42\% \\
+Overall Accuracy  & 97.08\% \\
 \hline
-Kappa Coefficient & 0.8322 \\
+Kappa Coefficient & 0.9611 \\
 \hline
 \end{tabular}
 \caption{Overall metrics for the optimized ANN}
@@ -646,47 +635,33 @@ Kappa Coefficient & 0.8322 \\
 
 \subsection{Description}
 
-K-Nearest Neighbor (KNN) is an instance-based, non-parametric classifier that assigns the label of a new pixel according to the majority class among its nearest neighbors in the spectral feature space. Unlike parametric models, KNN does not learn an explicit decision function during training; instead, it stores the normalized training samples and computes distances at prediction time. Because distance-based methods are highly sensitive to feature scale, all input bands were normalized to the range $[0,1]$ before training.
+K-Nearest Neighbor (KNN) is an instance-based, non-parametric classifier that assigns the label of a new pixel according to the majority class among its \textit{k} nearest neighbors in the spectral feature space. The \texttt{kknn} implementation was used, which supports both the number of neighbors \texttt{k} and the distance metric as tunable parameters. All input bands were normalized to $[0,\,1]$ before training, as distance-based methods are highly sensitive to feature scale.
 
 \subsection{Hyperparameter Optimization}
 
-HPO was performed using 5-fold cross-validation over the following grid:
+HPO was performed using 5-fold cross-validation over a 3~$\times$~3 grid of \texttt{k}~$\times$~distance metric:
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Parameter} & \textbf{Values Tested} \\
+\textbf{k} & \textbf{Distance} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
 \hline
-k (nearest neighbors) & 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 \\
-\hline
-\end{tabular}
-\caption{Hyperparameter grid for KNN}
-\end{table}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{|c|c|c|}
-\hline
-\textbf{k} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
-\hline
-1  & 0.8195 & 0.7593 \\
-3  & 0.8225 & 0.7633 \\
-\textbf{5}  & \textbf{0.8254} & \textbf{0.7671} \\
-7  & 0.8193 & 0.7590 \\
-9  & 0.8134 & 0.7512 \\
-11 & 0.8143 & 0.7524 \\
-13 & 0.8138 & 0.7517 \\
-15 & 0.8123 & 0.7498 \\
-17 & 0.8102 & 0.7469 \\
-19 & 0.8107 & 0.7476 \\
-21 & 0.8088 & 0.7450 \\
+ 3 & Manhattan  & 94.77\% & 0.9302 \\
+ 3 & Euclidean  & 95.14\% & 0.9352 \\
+ 3 & Minkowski  & 95.05\% & 0.9340 \\
+ 7 & Manhattan  & 94.77\% & 0.9302 \\
+ 7 & Euclidean  & 95.14\% & 0.9352 \\
+ 7 & Minkowski  & 95.05\% & 0.9340 \\
+15 & Manhattan  & 94.77\% & 0.9302 \\
+\textbf{15} & \textbf{Euclidean}  & \textbf{95.14\%} & \textbf{0.9352} \\
+15 & Minkowski  & 95.05\% & 0.9340 \\
 \hline
 \end{tabular}
-\caption{Cross-validation results for all KNN hyperparameter combinations. Best configuration in bold.}
+\caption{3~$\times$~3 HPO grid results for KNN. Best configuration in bold (tie broken by larger k).}
 \end{table}
 
-The optimal configuration was \textbf{k = 5}.
+The optimal configuration was \textbf{k = 15, Euclidean distance}. Notably, the value of \texttt{k} had no influence on accuracy — only the distance metric mattered, with Euclidean consistently outperforming Manhattan and Minkowski. This suggests that with well-normalized spectral data and clearly distinct classes, the choice of neighborhood size is irrelevant.
 
 \subsection{Confusion Matrix}
 
@@ -694,35 +669,35 @@ The optimal configuration was \textbf{k = 5}.
 \centering
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\textbf{Predicted $\backslash$ Reference} & \textbf{cultivos} & \textbf{suelo\_desnudo} & \textbf{urbano} & \textbf{vegetacion} \\
 \hline
-Cultivos       & 459 & 125 & 10 & 12 \\
+cultivos       & 555 & 40 &  5 & 0 \\
 \hline
-Suelo\_desnudo & 102 & 424 & 23 & 46 \\
+suelo\_desnudo &  44 & 549 & 14 & 0 \\
 \hline
-Vegetacion     & 17  & 45  & 566 & 15 \\
+urbano         &   1 &  11 & 577 & 1 \\
 \hline
-Zona\_urbana   & 22  & 6   & 1   & 527 \\
+vegetacion     &   0 &   0 &  4 & 599 \\
 \hline
 \end{tabular}
-\caption{Confusion matrix for the optimized KNN (k = 5)}
+\caption{Confusion matrix for the optimized KNN (k = 15, Euclidean distance)}
 \end{table}
 
 \subsection{Performance Metrics}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\begin{tabular}{|m{4cm}|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
 \hline
-Cultivos       & 0.7650 & 0.9183 & 0.7574 & 0.7650 & 0.7612 \\
+cultivos       & 0.9250 & 0.9250 & 0.9250 \\
 \hline
-Suelo\_desnudo & 0.7067 & 0.9050 & 0.7126 & 0.7067 & 0.7096 \\
+suelo\_desnudo & 0.9044 & 0.9150 & 0.9097 \\
 \hline
-Vegetacion     & 0.9433 & 0.9572 & 0.8802 & 0.9433 & 0.9107 \\
+urbano         & 0.9780 & 0.9617 & 0.9697 \\
 \hline
-Zona\_urbana   & 0.8783 & 0.9839 & 0.9478 & 0.8783 & 0.9118 \\
+vegetacion     & 0.9934 & 0.9983 & 0.9958 \\
 \hline
 \end{tabular}
 \caption{Per-class performance metrics for the optimized KNN}
@@ -734,15 +709,13 @@ Zona\_urbana   & 0.8783 & 0.9839 & 0.9478 & 0.8783 & 0.9118 \\
 \hline
 \textbf{Metric} & \textbf{Value} \\
 \hline
-Overall Accuracy & 82.33\% \\
+Overall Accuracy  & 95.00\% \\
 \hline
-Kappa Coefficient & 0.7644 \\
+Kappa Coefficient & 0.9333 \\
 \hline
 \end{tabular}
 \caption{Overall metrics for the optimized KNN}
 \end{table}
-
-The KNN model achieved solid performance overall, sitting between the Decision Tree and the ANN in terms of predictive quality. It classified \textit{Vegetacion} and \textit{Zona\_urbana} more reliably than the other classes, while the main source of confusion remained the spectral overlap between \textit{Cultivos} and \textit{Suelo\_desnudo}, which are visually and spectrally similar in the study area.
 
 %------------------------------------------------
 \section{Model 5: Naive Bayes (NB)}
@@ -750,36 +723,33 @@ The KNN model achieved solid performance overall, sitting between the Decision T
 
 \subsection{Description}
 
-Naive Bayes is a probabilistic classifier based on Bayes' Theorem that assumes conditional independence between spectral bands. The Gaussian variant models each band's distribution as a normal distribution per class. The key hyperparameters are \texttt{fL} (Laplace smoothing), \texttt{usekernel} (whether to use kernel density estimation instead of the Gaussian assumption), and \texttt{adjust} (bandwidth adjustment for kernel estimation).
+Naive Bayes is a probabilistic classifier based on Bayes' Theorem that assumes conditional independence between spectral bands given the class. The kernel density estimation variant (\texttt{usekernel = TRUE}) was used throughout, which models each band's distribution non-parametrically and is better suited for the non-Gaussian spectral distributions typical of satellite imagery. The hyperparameter \texttt{laplace} controls additive smoothing, and \texttt{adjust} sets the bandwidth multiplier for the kernel density estimator.
 
 \subsection{Hyperparameter Optimization}
 
-HPO was performed using 5-fold cross-validation over the following grid:
+HPO was performed using 5-fold cross-validation over a 3~$\times$~3 grid of \texttt{laplace}~$\times$~\texttt{adjust}:
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|c|c|}
+\begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Parameter} & \textbf{Values Tested} \\
+\textbf{laplace} & \textbf{adjust} & \textbf{Accuracy (CV)} & \textbf{Kappa (CV)} \\
 \hline
-fL (Laplace smoothing) & 0, 0.5, 1 \\
-\hline
-usekernel & TRUE, FALSE \\
-\hline
-adjust (bandwidth) & 0.5, 1, 2 \\
+0.0 & 0.5 & 87.04\% & 0.8271 \\
+\textbf{0.0} & \textbf{1.0} & \textbf{87.29\%} & \textbf{0.8305} \\
+0.0 & 2.0 & 87.02\% & 0.8269 \\
+0.5 & 0.5 & 87.04\% & 0.8271 \\
+0.5 & 1.0 & 87.29\% & 0.8305 \\
+0.5 & 2.0 & 87.02\% & 0.8269 \\
+1.0 & 0.5 & 87.04\% & 0.8271 \\
+1.0 & 1.0 & 87.29\% & 0.8305 \\
+1.0 & 2.0 & 87.02\% & 0.8269 \\
 \hline
 \end{tabular}
-\caption{Hyperparameter grid for Naive Bayes}
+\caption{3~$\times$~3 HPO grid results for Naive Bayes. Best configuration in bold (tie broken by laplace = 0).}
 \end{table}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{nb_hpo.png}
-\caption{Cross-validation accuracy for Naive Bayes hyperparameter combinations.}
-\label{fig:nb_hpo}
-\end{figure}
-
-The optimal configuration was \textbf{fL = 0, usekernel = FALSE, adjust = 0.5}, achieving a cross-validation accuracy of 67.59\% and a Kappa coefficient of 0.5679.
+The optimal configuration was \textbf{laplace = 0, adjust = 1.0}. The \texttt{laplace} parameter had no effect on performance: with 2,000 samples per class, zero-frequency problems do not arise, making smoothing redundant. Only \texttt{adjust} produced marginal differences.
 
 \subsection{Confusion Matrix}
 
@@ -787,35 +757,35 @@ The optimal configuration was \textbf{fL = 0, usekernel = FALSE, adjust = 0.5}, 
 \centering
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Predicted $\backslash$ Reference} & \textbf{Cultivos} & \textbf{Suelo\_desnudo} & \textbf{Vegetacion} & \textbf{Zona\_urbana} \\
+\textbf{Predicted $\backslash$ Reference} & \textbf{cultivos} & \textbf{suelo\_desnudo} & \textbf{urbano} & \textbf{vegetacion} \\
 \hline
-Cultivos       & 258 &  65 &   8 &  34 \\
+cultivos       & 422 &  18 &  12 &   0 \\
 \hline
-Suelo\_desnudo & 284 & 425 &  23 & 171 \\
+suelo\_desnudo & 138 & 543 &  50 &   0 \\
 \hline
-Vegetacion     &  22 &  78 & 557 &  37 \\
+urbano         &  40 &  39 & 530 &   3 \\
 \hline
-Zona\_urbana   &  36 &  32 &  12 & 358 \\
+vegetacion     &   0 &   0 &   8 & 597 \\
 \hline
 \end{tabular}
-\caption{Confusion matrix for the optimized Naive Bayes (fL = 0, usekernel = FALSE, adjust = 0.5)}
+\caption{Confusion matrix for the optimized Naive Bayes (laplace = 0, adjust = 1.0)}
 \end{table}
 
 \subsection{Performance Metrics}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|m{4cm}|c|c|c|c|c|}
+\begin{tabular}{|m{4cm}|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
 \hline
-Cultivos       & 0.4300 & 0.9406 & 0.7068 & 0.4300 & 0.5357 \\
+cultivos       & 0.9336 & 0.7033 & 0.8023 \\
 \hline
-Suelo\_desnudo & 0.7083 & 0.7344 & 0.4707 & 0.7083 & 0.5657 \\
+suelo\_desnudo & 0.7428 & 0.9050 & 0.8159 \\
 \hline
-Vegetacion     & 0.9283 & 0.9239 & 0.8026 & 0.9283 & 0.8610 \\
+urbano         & 0.8660 & 0.8833 & 0.8746 \\
 \hline
-Zona\_urbana   & 0.5967 & 0.9556 & 0.8174 & 0.5967 & 0.6899 \\
+vegetacion     & 0.9868 & 0.9950 & 0.9909 \\
 \hline
 \end{tabular}
 \caption{Per-class performance metrics for the optimized Naive Bayes}
@@ -827,9 +797,9 @@ Zona\_urbana   & 0.5967 & 0.9556 & 0.8174 & 0.5967 & 0.6899 \\
 \hline
 \textbf{Metric} & \textbf{Value} \\
 \hline
-Overall Accuracy & 66.58\% \\
+Overall Accuracy  & 87.17\% \\
 \hline
-Kappa Coefficient & 0.5544 \\
+Kappa Coefficient & 0.8289 \\
 \hline
 \end{tabular}
 \caption{Overall metrics for the optimized Naive Bayes}
@@ -842,30 +812,34 @@ Kappa Coefficient & 0.5544 \\
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{|m{2.5cm}|c|c|m{3.5cm}|m{3.5cm}|}
+\begin{tabular}{|m{2.8cm}|m{3.8cm}|c|c|c|m{2.8cm}|}
 \hline
-\textbf{Model} & \textbf{Overall Accuracy} & \textbf{Kappa} & \textbf{Best Class} & \textbf{Worst Class} \\
+\textbf{Model} & \textbf{Best Parameters} & \textbf{Accuracy} & \textbf{Kappa} & \textbf{F1 mean} & \textbf{Weakest class} \\
 \hline
-Decision Tree  & 78.17\% & 0.7089 & Vegetacion (92.17\%) & Suelo\_desnudo (66.33\%) \\
+\textbf{ANN}  & size=20, decay=0.01   & \textbf{97.38\%} & \textbf{0.9650} & \textbf{0.9737} & suelo\_desnudo (0.9429) \\
 \hline
-SVM            & 85.96\% & 0.8128 & Vegetacion (96.83\%) & Suelo\_desnudo (74.67\%) \\
+SVM           & C=10, sigma=1.0       & 96.75\%          & 0.9567          & 0.9676          & suelo\_desnudo (0.9382) \\
 \hline
-ANN            & 87.42\% & 0.8322 & Vegetacion (95.67\%) & Suelo\_desnudo (79.00\%) \\
+KNN           & k=15, Euclidean       & 95.00\%          & 0.9333          & 0.9501          & suelo\_desnudo (0.9097) \\
 \hline
-KNN            & 82.33\% & 0.7644 & Vegetacion (94.33\%) & Suelo\_desnudo (70.67\%) \\
+Decision Tree & cp=0.001, maxdepth=20 & 91.79\%          & 0.8906          & 0.9179          & suelo\_desnudo (0.8540) \\
 \hline
-Naive Bayes    & 66.58\% & 0.5544 & Vegetacion (92.83\%) & Cultivos (43.00\%) \\
+Naive Bayes   & laplace=0, adjust=1.0 & 87.17\%          & 0.8289          & 0.8709          & cultivos (0.8023)       \\
 \hline
 \end{tabular}
-\caption{Comparative performance summary across the five classification models. The best class corresponds to the highest per-class sensitivity and the worst class to the lowest.}
+\caption{Comparative performance summary across the five classification models. Accuracy values from \texttt{fase2\_resumen.R}; F1 mean is the unweighted average across the four land cover classes.}
 \end{table}
 
 %------------------------------------------------
 \section{Phase 2 Conclusion}
 %------------------------------------------------
 
-Among the five models evaluated in this report, the Artificial Neural Network achieved the best overall performance, with 87.42\% accuracy and a Kappa coefficient of 0.8322. It was closely followed by the Support Vector Machine (85.96\%, 0.8128) and the K-Nearest Neighbor classifier (82.33\%, 0.7644). The Decision Tree obtained 78.17\% accuracy (0.7089), while the Gaussian Naive Bayes classifier performed the weakest (66.58\%, 0.5544), a result consistent with its conditional-independence assumption, which does not hold for the highly correlated Sentinel-2 spectral bands. Across all five models, \textit{Vegetacion} and \textit{Zona\_urbana} were the most reliably classified categories, whereas \textit{Suelo\_desnudo} and \textit{Cultivos} consistently showed the strongest spectral overlap and accounted for most of the misclassifications.
+Among the five models evaluated, the Artificial Neural Network achieved the best overall performance with 97.38\% accuracy and a Kappa coefficient of 0.9650, followed closely by the Support Vector Machine (96.75\%, Kappa 0.9567). Both non-linear models substantially outperformed the simpler classifiers, confirming that the spectral classes of the Armero study area are not linearly separable and require flexible decision boundaries.
 
-These results confirm that non-linear models (ANN and SVM) are best suited for capturing the spectral complexity of the Armero study area, providing a solid baseline for the further optimization and thematic mapping planned for the next phase.
+The K-Nearest Neighbor classifier ranked third (95.00\%, Kappa 0.9333), while the Decision Tree obtained 91.79\% (Kappa 0.8906). Naive Bayes performed the weakest (87.17\%, Kappa 0.8289), a result consistent with its conditional-independence assumption, which does not hold for the highly correlated Sentinel-2 spectral bands.
+
+Across all five models, \textit{vegetacion} was the most reliably classified category (F1 $\geq$ 0.98 in every model), while \textit{suelo\_desnudo} and \textit{cultivos} consistently showed the strongest spectral overlap and accounted for most misclassifications. This is expected, as both surfaces share similar visible and short-wave infrared reflectance values within the study area.
+
+The ANN (size = 20, decay = 0.01) is confirmed as the best-performing model and will be used for full-scene thematic inference in Phase~3.
 
 \end{document}

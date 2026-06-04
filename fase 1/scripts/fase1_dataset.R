@@ -1,31 +1,31 @@
 # ============================================================
 # fase1_dataset.R
-# Phase 1 - Step 2: Training dataset creation
+# Phase 1 – Step 3: Training dataset creation
 # Extracts pixel values from training polygons and exports TSV
 # ============================================================
 
 library(terra)
 library(dplyr)
 
-# ── Adjust these paths ──────────────────────────────────────
-raster_file    <- "C:/Users/valeh/OneDrive - Pontificia Universidad Javeriana/2610/Emergentes/Proyecto 2/armero_recortado.tif"
-poligonos_file <- "C:/Users/valeh/OneDrive - Pontificia Universidad Javeriana/2610/Emergentes/Proyecto 1/PROYECTO/muestras_armero.gpkg"
-output_file    <- "C:/Users/valeh/OneDrive - Pontificia Universidad Javeriana/2610/Emergentes/Proyecto 2/training_data.tsv"
+# ── EDIT THESE THREE PATHS ──────────────────────────────────
+raster_file    <- "C:/Users/valeh/Downloads/proyecto-emergentes/armero_recortado.tif"
+poligonos_file <- "C:/Users/valeh/Downloads/proyecto-emergentes/muestras_armero.gpkg"
+output_file    <- "C:/Users/valeh/Downloads/proyecto-emergentes/training_data.tsv"
 # ────────────────────────────────────────────────────────────
 
 # Load clipped raster and training polygons
 r    <- rast(raster_file)
-pols <- vect(poligonos_file)
-
-# Reproject polygons to match raster CRS
-pols <- project(pols, crs(r))
+pols <- vect(poligonos_file, layer = "muestras")
 
 # Assign band names
 names(r) <- c("B2","B3","B4","B5","B6","B7","B8","B8A","B11","B12")
 
+# Reproject polygons to match raster CRS
+pols <- project(pols, crs(r))
+
 # Extract pixel values within each polygon (including coordinates)
-extracted <- extract(r, pols, xy = TRUE, ID = TRUE)
-extracted$clase <- pols$clase[extracted$ID]
+extracted        <- extract(r, pols, xy = TRUE, ID = TRUE)
+extracted$clase  <- pols$clase[extracted$ID]
 
 # Keep only relevant columns and remove NA rows
 df <- extracted[, c("x","y","B2","B3","B4","B5","B6","B7","B8","B8A","B11","B12","clase")]
@@ -35,15 +35,16 @@ df <- na.omit(df)
 message("Available pixels per class:")
 print(table(df$clase))
 
-# Balanced random sampling: 2000 pixels per class (8000 total)
+# Balanced random sampling: 2000 pixels per class
 set.seed(123)
 df_balanced <- df %>%
   group_by(clase) %>%
   slice_sample(n = 2000) %>%
   ungroup()
 
-# Export as Tab-Separated Values (TSV)
+# Export as Tab-Separated Values
 write.table(df_balanced, file = output_file, sep = "\t", row.names = FALSE, quote = FALSE)
-message("✓ Dataset saved: ", output_file)
-message(paste("✓ Total pixels:", nrow(df_balanced)))
+
+message("Dataset saved: ", output_file)
+message("Total pixels: ", nrow(df_balanced))
 print(table(df_balanced$clase))
