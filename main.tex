@@ -6,8 +6,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{geometry}
-\usepackage[draft]{graphicx}
-\graphicspath{{fase 1/imagenes/}{fase 2/imagenes/}}
+\usepackage{graphicx}
+\graphicspath{{fase 1/imagenes/}{fase 2/imagenes/}{fase 3/imagenes/}}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
@@ -17,6 +17,7 @@
 \usepackage{hyperref}
 \usepackage{amsmath}
 
+
 \geometry{margin=2.5cm}
 \setstretch{1.5}
 
@@ -24,7 +25,7 @@
 % TITLE
 %------------------------------------------------
 \title{
-\textbf{Phases 1 \& 2: Problem Definition, Pre-processing and Training} \\
+\textbf{Phases 1--3: Problem Definition, Training and Spatial Prediction} \\
 Comparative Analysis of Machine Learning Architectures \\
 for Satellite-Based Surface Monitoring \\
 \vspace{0.5cm}
@@ -841,5 +842,176 @@ The K-Nearest Neighbor classifier ranked third (95.00\%, Kappa 0.9333), while th
 Across all five models, \textit{vegetacion} was the most reliably classified category (F1 $\geq$ 0.98 in every model), while \textit{suelo\_desnudo} and \textit{cultivos} consistently showed the strongest spectral overlap and accounted for most misclassifications. This is expected, as both surfaces share similar visible and short-wave infrared reflectance values within the study area.
 
 The ANN (size = 20, decay = 0.01) is confirmed as the best-performing model and will be used for full-scene thematic inference in Phase~3.
+
+%================================================
+\part{Phase 3: Synthesis and Prediction}
+%================================================
+
+%------------------------------------------------
+\section{Introduction}
+%------------------------------------------------
+
+This final phase synthesizes the results of the comparative analysis carried out in Phase~2 and deploys the selected classification model to produce a complete thematic land-cover map of the Armero study area. Unlike the training phase, which operated on a discrete set of 8,000 pixels extracted from training polygons, the inference phase applies the trained model to the entire multispectral raster stack, classifying every valid pixel within the Region of Interest.
+
+The objectives of this phase are threefold: (i) to confirm the selection of the most robust classification architecture based on the validation metrics obtained in Phase~2; (ii) to perform full-scene inference and export the result as a georeferenced GeoTIFF; and (iii) to generate a thematic visualization and quantify the surface area occupied by each land cover class.
+
+%------------------------------------------------
+\section{Model Selection for Inference}
+%------------------------------------------------
+
+\subsection{Selection Criteria}
+
+To ensure a rigorous and defensible choice, the final model was selected following an empirical, multi-criteria procedure rather than relying on a single number. The criteria were applied in the following order of priority:
+\begin{enumerate}
+    \item \textbf{Macro F1-Score.} Prioritized over Overall Accuracy because it balances precision and recall across all classes and is more informative when spectrally similar classes (such as \textit{cultivos} and \textit{suelo\_desnudo}) are present.
+    \item \textbf{Kappa Coefficient.} As a secondary criterion, it measures the agreement between predictions and reference data beyond what would be expected by chance, providing a more conservative estimate of model quality than raw accuracy.
+    \item \textbf{Per-class consistency.} When two models obtained comparable F1 and Kappa values, the confusion matrices were inspected class by class, favouring the model with the most balanced performance across all four classes.
+    \item \textbf{Robustness over peak performance.} A model with consistent performance across all classes was preferred over one with a higher global score but a weak class, since spatial consistency in the final map is more valuable than a marginal gain in a single aggregate metric.
+\end{enumerate}
+
+\subsection{Selected Model}
+
+Applying these criteria, the \textbf{Artificial Neural Network (ANN)} was selected for full-scene inference. It obtained the highest values in every aggregate metric simultaneously: the best Macro F1-Score (0.9737), the highest Overall Accuracy (97.38\%), and the highest Kappa coefficient (0.9650). Crucially, it was also the most balanced model at the per-class level, with no class falling below an F1-Score of 0.94 and \textit{vegetacion} reaching a perfect F1 of 1.0000. The Support Vector Machine was a close competitor, but the ANN matched or exceeded it on every criterion, making the choice unambiguous in this case.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{5cm}|c|}
+\hline
+\textbf{Attribute} & \textbf{Value} \\
+\hline
+Selected model & Artificial Neural Network (ANN) \\
+\hline
+Optimal hyperparameters & size = 20, decay = 0.01 \\
+\hline
+Final Overall Accuracy & 97.38\% \\
+\hline
+Final Kappa Coefficient & 0.9650 \\
+\hline
+Macro F1-Score & 0.9737 \\
+\hline
+\end{tabular}
+\caption{Summary of the model selected for full-scene inference}
+\end{table}
+
+%------------------------------------------------
+\section{Full-Scene Inference}
+%------------------------------------------------
+
+\subsection{Inference Workflow}
+
+The inference procedure was implemented in R (\texttt{inferencia.R}) using the \texttt{terra} and \texttt{caret} packages. Since the trained model object was not serialized during Phase~2, the ANN was re-trained at the start of the inference script using the same random seed (\texttt{set.seed(123)}), the same 70\% training partition, and the same min-max normalization parameters derived from that partition. This guarantees that the reflectance values of the full raster are scaled identically to the data the model was trained on.
+
+The clipped multispectral raster (\texttt{armero\_recortado.tif}, 987~$\times$~1009 pixels) was loaded, its ten bands (B2--B12) were normalized using the training minima and maxima, and the model assigned a class label to each valid pixel. Pixels containing no-data values in any band were excluded from prediction and preserved as no-data in the output. A total of \textbf{995,883} valid pixels were classified.
+
+\subsection{Output Raster Specifications}
+
+The predicted map was exported as a georeferenced GeoTIFF (\texttt{armero\_predicho.tif}) that preserves the spatial reference of the source imagery:
+
+\begin{itemize}
+    \item \textbf{Spatial Consistency:} the output retains the original Coordinate Reference System (WGS84 / UTM Zone 18N, EPSG:32618) and the affine transformation parameters of \texttt{armero\_recortado.tif}, so that the prediction aligns exactly with the Sentinel-2 imagery.
+    \item \textbf{Data type:} single-band unsigned 8-bit integer raster (\texttt{INT1U}), where each pixel value corresponds to a land cover class code.
+    \item \textbf{Resolution:} 10~m, matching the input stack.
+\end{itemize}
+
+The class-to-code mapping used in the output raster is defined as follows:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|m{6cm}|}
+\hline
+\textbf{Pixel Code} & \textbf{Land Cover Class} \\
+\hline
+1 & cultivos (Croplands) \\
+\hline
+2 & suelo\_desnudo (Bare Soil) \\
+\hline
+3 & urbano (Urban Area) \\
+\hline
+4 & vegetacion (Vegetation) \\
+\hline
+\end{tabular}
+\caption{Integer codes assigned to each land cover class in the predicted raster}
+\end{table}
+
+%------------------------------------------------
+\section{Thematic Map}
+%------------------------------------------------
+
+\subsection{Color Symbology}
+
+The predicted GeoTIFF was imported into QGIS and rendered using a paletted/unique-values symbology so that each class is clearly distinguishable. The color scheme applied is:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|m{4cm}|m{4cm}|}
+\hline
+\textbf{Code} & \textbf{Class} & \textbf{Color} \\
+\hline
+1 & cultivos & Orange \\
+\hline
+2 & suelo\_desnudo & Brown \\
+\hline
+3 & urbano & Dark red \\
+\hline
+4 & vegetacion & Green \\
+\hline
+\end{tabular}
+\caption{Discrete color symbology applied to the thematic land-cover map}
+\end{table}
+
+\subsection{Resulting Map}
+
+Figure~\ref{fig:thematic_map} shows the final classified map over an OpenStreetMap base layer. Vegetation (green) dominates the hillsides surrounding the valley, while bare soil (brown) and croplands (orange) concentrate in the flatter central zone along the Magdalena River. The urban class (dark red) appears mainly in the central-south sector, corresponding to the present-day settlement of Armero Guayabal and the area historically buried by the 1985 lahars.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{fase 3/imagenes/mapa_fase3.png}
+\caption{Predicted land-cover map of the Armero study area, obtained by applying the optimized ANN model to the full Sentinel-2 scene. Green: vegetation; brown: bare soil; orange: croplands; dark red: urban areas.}
+\label{fig:thematic_map}
+\end{figure}
+
+%------------------------------------------------
+\section{Area Quantification}
+%------------------------------------------------
+
+The total surface area occupied by each class was computed from the predicted raster by counting the number of pixels per class and multiplying by the pixel area. At a 10~m resolution, each pixel covers $10 \times 10 = 100~\text{m}^2 = 0.01$~hectares, so the area per class is obtained as:
+
+\begin{equation}
+A_{\text{class}} = N_{\text{pixels}} \times 0.01~\text{ha}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|m{4cm}|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Pixel Count} & \textbf{Area (ha)} & \textbf{Area (km$^2$)} & \textbf{Area (\%)} \\
+\hline
+cultivos       & 167,810 & 1,678.10 & 16.78 & 16.85 \\
+\hline
+suelo\_desnudo & 316,685 & 3,166.85 & 31.67 & 31.80 \\
+\hline
+urbano         & 101,474 & 1,014.74 & 10.15 & 10.19 \\
+\hline
+vegetacion     & 409,914 & 4,099.14 & 40.99 & 41.16 \\
+\hline
+\textbf{Total} & \textbf{995,883} & \textbf{9,958.83} & \textbf{99.59} & \textbf{100.00} \\
+\hline
+\end{tabular}
+\caption{Surface area occupied by each land cover class in the Armero study area}
+\end{table}
+
+Vegetation is the most extensive class, covering 40.99~km$^2$ (41.16\% of the classified area), followed by bare soil with 31.67~km$^2$ (31.80\%). Croplands account for 16.78~km$^2$ (16.85\%) and the urban class for 10.15~km$^2$ (10.19\%).
+
+%------------------------------------------------
+\section{Phase 3 Conclusion}
+%------------------------------------------------
+
+This phase completed the full remote-sensing classification pipeline, from the selection of the optimal model to the generation of a quantitative thematic product. The Artificial Neural Network, selected empirically as the best-performing architecture in Phase~2 (97.38\% accuracy, Kappa 0.9650, Macro F1 0.9737), was deployed over the entire Sentinel-2 scene to classify 995,883 pixels into four land cover categories.
+
+The resulting map indicates that the Armero study area is currently dominated by natural vegetation (41.16\%), distributed mainly across the surrounding hillsides, followed by bare soil (31.80\%) and croplands (16.85\%) concentrated in the flat central zone of the Magdalena River valley. The urban class (10.19\%) is largely confined to the central-south sector around Armero Guayabal. Nearly four decades after the 1985 disaster, the landscape thus appears largely recovered in vegetative terms, while the central plain still exhibits a substantial proportion of exposed soil and agricultural use.
+
+A noteworthy observation is the spatial dispersion of the \textit{suelo\_desnudo} class, which appears scattered throughout the scene rather than concentrated in a single region. This pattern suggests that the model may be conflating bare soil with spectrally similar surfaces such as unpaved roads, harvested or fallow croplands, and transitional terrain. This behaviour is consistent with the validation results of Phase~2, where \textit{suelo\_desnudo} obtained the lowest per-class F1-Score (0.9429) and showed the strongest confusion with \textit{cultivos}, owing to their overlapping reflectance in the visible and short-wave infrared bands. While this residual confusion is the main source of uncertainty in the final product, it does not compromise the overall quality of the classification, which remains high across all aggregate metrics.
+
+Overall, this project demonstrates a complete GeoAI workflow, transforming raw multispectral reflectance into an actionable, georeferenced land-cover map and quantitative area statistics, and illustrates both the strengths and the inherent spectral limitations of supervised classification applied to a historically significant region.
 
 \end{document}
